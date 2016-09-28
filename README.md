@@ -23,3 +23,9 @@ informando a marca, modelo da balança e a conexão usada(Serial, Paralela ou USB)
 
 sugestões e agradecimentos são sempre bem vindos,
 então não deixe de enviar um "Valeu!" para contato@mzsw.com.br
+
+![Alt text](/res/img/teste.png?raw=true "Programa de teste")
+
+![Alt text](/res/img/delphi.png?raw=true "Exemplo em Delphi")
+
+![Alt text](/res/img/java.png?raw=true "Exemplo em Java")
