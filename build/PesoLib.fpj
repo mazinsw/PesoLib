@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project>
+	<VersionInfo>
+		<VersionNumbers Major="1" Minor="2" Release="0" Build="0"/>
+		<LanguageID Value="1046"/>
+		<CharsetID Value="1252"/>
+		<CompanyName Value="MZSW"/>
+		<FileVersion Value="1.2.0.0"/>
+		<FileDescription Value="Biblioteca para obtenção de peso de item de balanças"/>
+		<InternalName Value="PesoLib.dll"/>
+		<LegalCopyright Value=""/>
+		<LegalTrademarks Value=""/>
+		<OriginalFilename Value="PesoLib.dll"/>
+		<ProductName Value="PesoLib"/>
+		<ProductVersion Value="1.2.0.0"/>
+		<AutoIncrementBuild Value="No"/>
+	</VersionInfo>
+	<Libs Value="-shared -Wl,--kill-at -lwinspool"/>
+	<Flags Value="-I..\include -I..\src\system -I..\src\comm -I..\src\device -I..\src\driver -I..\src\util -I..\src\java\jni -I..\src\java\jni\win32 -DBUILD_DLL -DDEBUGLIB2"/>
+	<Target Value="../bin/x64/PesoLib.dll"/>
+	<CommandLine Value=""/>
+	<CompilerOptions Value="-Wall -s -O2"/>
+	<DeleteObjectsBefore Value="No"/>
+	<DeleteObjectsAfter Value="No"/>
+	<DeleteMakefileAfter Value="No"/>
+	<DeleteResourcesAfter Value="No"/>
+	<EnableTheme Value="No"/>
+	<RequiresAdmin Value="No"/>
+	<CompilerType Value="C"/>
+	<AppType Value="DLL"/>
+	<Files>
+		<Folder Name="..">
+			<Folder Name="include">
+				<File Name="PesoLib.h"/>
+				<Folder Name="private">
+					<File Name="Plataforma.h"/>
+				</Folder>
+			</Folder>
+			<Folder Name="src">
+				<File Name="PesoLib.c"/>
+				<Folder Name="system">
+					<File Name="Event.h"/>
+					<File Name="Mutex.h"/>
+					<File Name="Thread.h"/>
+				</Folder>
+				<Folder Name="comm">
+					<File Name="CommPort.h"/>
+				</Folder>
+				<Folder Name="device">
+					<File Name="Device.h"/>
+					<File Name="Device.c"/>
+					<File Name="DevicePrivate.h"/>
+					<File Name="DeviceManager.h"/>
+					<File Name="DeviceManager.c"/>
+				</Folder>
+				<Folder Name="driver">
+					<File Name="Magna.h"/>
+					<File Name="Magna.c"/>
+					<File Name="Filizola.h"/>
+					<File Name="Filizola.c"/>
+					<File Name="Toledo.h"/>
+					<File Name="Toledo.c"/>
+					<File Name="Alfa.h"/>
+					<File Name="Alfa.c"/>
+					<File Name="Urano.h"/>
+					<File Name="Urano.c"/>
+				</Folder>
+				<Folder Name="win">
+					<File Name="main.c"/>
+					<File Name="CommPort.c"/>
+					<File Name="Event.c"/>
+					<File Name="Mutex.c"/>
+					<File Name="Thread.c"/>
+				</Folder>
+				<Folder Name="util">
+					<File Name="StringBuilder.h"/>
+					<File Name="StringBuilder.c"/>
+				</Folder>
+				<Folder Name="java">
+					<File Name="br_com_mzsw_PesoLibWrapper.h"/>
+					<File Name="br_com_mzsw_PesoLibWrapper.c"/>
+				</Folder>
+			</Folder>
+		</Folder>
+	</Files>
+</Project>

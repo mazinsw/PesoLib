@@ -1,0 +1,30 @@
+1.1.0.0
+Corrigido ajuste de velocidade que estava sem efeito
+Implementado detecção de velocidade da porta de comunicação
+Alterado a forma de conexão para não esperar por eventos (maior compatibilidade com balanças)
+
+1.0.0.210
+Criado versão de 64 bits
+
+1.0.0.209
+Corrigido ajustes da propriedade stop (bits de parada)
+
+1.0.0.208
+Reconhecimento de pesos instáveis (apenas para conexão)
+
+1.0.0.207
+Adicionado suporte ao recebimento de peso da balança Toledo
+	usando o protocolo B e C
+Corrigido recebimento de peso do Indicador de pesagem Modelo 3101C
+	estava recebendo peso bruto, agora apenas peso liquido é recebido
+
+1.0.0.205
+Adicionado integração ao Indicador de pesagem Modelo 3101C da 
+	Alfa Instrumentos
+Adicionado método de solicitar peso sem informar o preço
+
+1.0.0.200
+
+Corrigido problema de sincronização no componente delphi, ocasionado por ativar e desativar rapidamente o componente
+Corrigido problema de perda de envio de peso ao realizar o teste de verificação se a balança está online 
+    (agora permite receber vários pesos da balança em um só comando)

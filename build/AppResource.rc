@@ -1,0 +1,25 @@
+1 VERSIONINFO
+    FILEVERSION 1,2,0,0
+    PRODUCTVERSION 1,2,0,0
+    FILEOS 0x4L
+    FILETYPE 0x1L
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "041604E4"
+        BEGIN
+            VALUE "CompanyName", "MZSW"
+            VALUE "FileDescription", "Biblioteca para obtenção de peso de item de balanças"
+            VALUE "FileVersion", "1.2.0.0"
+            VALUE "InternalName", "PesoLib.dll"
+            VALUE "LegalCopyright", ""
+            VALUE "OriginalFilename", "PesoLib.dll"
+            VALUE "ProductName", "PesoLib"
+            VALUE "ProductVersion", "1.2.0.0"
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0416, 0x04E4
+    END
+END
