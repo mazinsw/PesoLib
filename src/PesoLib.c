@@ -188,12 +188,18 @@ static int _PesoLib_echoTest(PesoLib * lib, CommPort* comm, int testCount)
 	printf("Echo test started\n");
 #endif
 	int count = DeviceManager_getDeviceCount(gDevMan);
-	int i, size, oldSize, bytesAvailable, bwritten;
+	int i, size, oldSize, bytesAvailable, bwritten, curr_index;
 	unsigned char buffer[16], oldBuffer[16];
 	size = 0;
+	int dev_index = lib->deviceIndex;
 	for(i = 0; i < count; i++)
 	{
-		Device * dev = DeviceManager_getDevice(gDevMan, i);
+		curr_index = i;
+		if(i == 0 && dev_index >= 0)
+			curr_index = dev_index;
+		else if(i == dev_index && dev_index >= 0)
+			curr_index = 0;
+		Device * dev = DeviceManager_getDevice(gDevMan, curr_index);
 		oldSize = size;
 		memcpy(oldBuffer, buffer, size);
 		size = Device_makeCmd(dev, "getweight", NULL, buffer, 16);
@@ -246,10 +252,10 @@ static int _PesoLib_echoTest(PesoLib * lib, CommPort* comm, int testCount)
 			buff[savedBytes + bytesAvailable] = 0;
 			memcpy(buff, savedBuff, savedBytes);
 			free(savedBuff);
-			if(_PesoLib_dataReceived(lib, buff, savedBytes + bytesAvailable, i, testCount))
+			if(_PesoLib_dataReceived(lib, buff, savedBytes + bytesAvailable, curr_index, testCount))
 			{
 				free(buff);
-				lib->deviceIndex = i;
+				lib->deviceIndex = curr_index;
 				return 1;
 			}
 			if(savedBytes >= sz)

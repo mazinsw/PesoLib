@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project>
-	<Libs Value=""/>
-	<Flags Value="-I..\include"/>
+	<Files>
+		<File Name="main_send_receive.c"/>
+	</Files>
+	<ConfigurationIndex Value="1"/>
+	<ConfigurationName Value="x86"/>
+	<Libs Value="-m32"/>
+	<Flags Value="-I..\include -m32"/>
 	<Target Value="TesteSendReceive.exe"/>
 	<CommandLine Value=""/>
 	<CompilerOptions Value="-Wall -s -O2"/>
@@ -13,7 +18,22 @@
 	<RequiresAdmin Value="No"/>
 	<CompilerType Value="C"/>
 	<AppType Value="CONSOLE"/>
-	<Files>
-		<File Name="main_send_receive.c"/>
-	</Files>
+	<Configurations>
+		<Configuration>
+			<ConfigurationName Value="x64"/>
+			<Libs Value="-m64"/>
+			<Flags Value="-I..\include -m64"/>
+			<Target Value="TesteSendReceive.exe"/>
+			<CommandLine Value=""/>
+			<CompilerOptions Value="-Wall -s -O2"/>
+			<DeleteObjectsBefore Value="Yes"/>
+			<DeleteObjectsAfter Value="Yes"/>
+			<DeleteMakefileAfter Value="Yes"/>
+			<DeleteResourcesAfter Value="Yes"/>
+			<EnableTheme Value="No"/>
+			<RequiresAdmin Value="No"/>
+			<CompilerType Value="C"/>
+			<AppType Value="CONSOLE"/>
+		</Configuration>
+	</Configurations>
 </Project>

@@ -1,29 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Layout>
-	<Files>
-		<File Name="..\src\driver\Urano.c" Top="Yes" Tabpos="1" TopLine="1">
-			<Cursor Line="11" Column="18"/>
-		</File>
-		<File Name="..\src\driver\Alfa.c" Top="No" Tabpos="2" TopLine="96">
-			<Cursor Line="1" Column="1"/>
-		</File>
-		<File Name="..\src\driver\Toledo.c" Top="No" Tabpos="3" TopLine="4">
-			<Cursor Line="1" Column="1"/>
-		</File>
-		<File Name="..\src\driver\Filizola.c" Top="No" Tabpos="4" TopLine="13">
-			<Cursor Line="1" Column="1"/>
-		</File>
-		<File Name="..\src\driver\Magna.c" Top="No" Tabpos="5" TopLine="10">
-			<Cursor Line="1" Column="1"/>
-		</File>
-	</Files>
 	<Folders>
 		<Folder Name=".." Expanded="Yes"/>
 		<Folder Name="..\include" Expanded="Yes"/>
-		<Folder Name="..\include\private" Expanded="Yes"/>
 		<Folder Name="..\src" Expanded="Yes"/>
-		<Folder Name="..\src\device" Expanded="Yes"/>
-		<Folder Name="..\src\driver" Expanded="Yes"/>
-		<Folder Name="..\src\win" Expanded="Yes"/>
 	</Folders>
 </Layout>

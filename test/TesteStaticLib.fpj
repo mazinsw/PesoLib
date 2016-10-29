@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Project>
+	<Files>
+		<File Name="main_lib.c"/>
+	</Files>
+	<ConfigurationIndex Value="1"/>
+	<ConfigurationName Value="x86"/>
+	<Libs Value="-L..\lib\x86 -lPesoLib -static -lwinspool -m32"/>
+	<Flags Value="-I..\include -m32"/>
+	<Target Value="TesteStaticLib.exe"/>
+	<CommandLine Value=""/>
+	<CompilerOptions Value="-Wall -s -O2"/>
+	<DeleteObjectsBefore Value="Yes"/>
+	<DeleteObjectsAfter Value="Yes"/>
+	<DeleteMakefileAfter Value="Yes"/>
+	<DeleteResourcesAfter Value="Yes"/>
+	<EnableTheme Value="No"/>
+	<RequiresAdmin Value="No"/>
+	<CompilerType Value="C"/>
+	<AppType Value="CONSOLE"/>
+	<Configurations>
+		<Configuration>
+			<ConfigurationName Value="x64"/>
+			<Libs Value="-m64 -L..\lib\x64 -lPesoLib -lwinspool -static"/>
+			<Flags Value="-I..\include -m64"/>
+			<Target Value="TesteStaticLib.exe"/>
+			<CommandLine Value=""/>
+			<CompilerOptions Value="-Wall -s -O2"/>
+			<DeleteObjectsBefore Value="Yes"/>
+			<DeleteObjectsAfter Value="Yes"/>
+			<DeleteMakefileAfter Value="Yes"/>
+			<DeleteResourcesAfter Value="Yes"/>
+			<EnableTheme Value="No"/>
+			<RequiresAdmin Value="No"/>
+			<CompilerType Value="C"/>
+			<AppType Value="CONSOLE"/>
+		</Configuration>
+	</Configurations>
+</Project>

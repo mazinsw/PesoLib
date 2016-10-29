@@ -124,7 +124,7 @@ procedure Register;
 implementation
 
 uses
-  Dialogs;
+  Dialogs, AnsiStrings;
 
 procedure Register;
 begin
@@ -332,7 +332,7 @@ end;
 
 function TBalancaWrapper.GetConfiguracao: string;
 begin
-  Result := string(StrPas(FPesoLib_getConfiguracao(FInstancia)));
+  Result := string(AnsiStrings.StrPas(FPesoLib_getConfiguracao(FInstancia)));
 end;
 
 procedure TBalancaWrapper.GetModelos(const Marca: string; Lista: TStrings);

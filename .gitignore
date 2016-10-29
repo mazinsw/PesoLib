@@ -46,6 +46,9 @@ Network Trash Folder
 Temporary Items
 .apdisk
 .metadata
+__history
 *.class
 *.dcu
 *.o
+*.identcache
+*.stat

@@ -1,33 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project>
-	<VersionInfo>
-		<VersionNumbers Major="1" Minor="2" Release="0" Build="0"/>
-		<LanguageID Value="1046"/>
-		<CharsetID Value="1252"/>
-		<CompanyName Value="MZSW"/>
-		<FileVersion Value="1.2.0.0"/>
-		<FileDescription Value="Biblioteca para obtenção de peso de item de balanças"/>
-		<InternalName Value="PesoLib.dll"/>
-		<LegalCopyright Value=""/>
-		<LegalTrademarks Value=""/>
-		<OriginalFilename Value="PesoLib.dll"/>
-		<ProductName Value="PesoLib"/>
-		<ProductVersion Value="1.2.0.0"/>
-		<AutoIncrementBuild Value="No"/>
-	</VersionInfo>
-	<Libs Value="-shared -Wl,--kill-at -lwinspool"/>
-	<Flags Value="-I..\include -I..\src\system -I..\src\comm -I..\src\device -I..\src\driver -I..\src\util -I..\src\java\jni -I..\src\java\jni\win32 -DBUILD_DLL -DDEBUGLIB2"/>
-	<Target Value="../bin/x64/PesoLib.dll"/>
-	<CommandLine Value=""/>
-	<CompilerOptions Value="-Wall -s -O2"/>
-	<DeleteObjectsBefore Value="No"/>
-	<DeleteObjectsAfter Value="No"/>
-	<DeleteMakefileAfter Value="No"/>
-	<DeleteResourcesAfter Value="No"/>
-	<EnableTheme Value="No"/>
-	<RequiresAdmin Value="No"/>
-	<CompilerType Value="C"/>
-	<AppType Value="DLL"/>
 	<Files>
 		<Folder Name="..">
 			<Folder Name="include">
@@ -83,4 +55,161 @@
 			</Folder>
 		</Folder>
 	</Files>
+	<ConfigurationIndex Value="3"/>
+	<ConfigurationName Value="EXE - x86"/>
+	<Libs Value="-lwinspool -m32"/>
+	<Flags Value="-I..\include -I..\src\system -I..\src\comm -I..\src\device -I..\src\driver -I..\src\util -I..\src\java\jni -I..\src\java\jni\win32 -m32 -DDEBUGLIB"/>
+	<Target Value="../bin/x86/PesoLib.exe"/>
+	<CommandLine Value=""/>
+	<CompilerOptions Value="-Wall -s -O2"/>
+	<DeleteObjectsBefore Value="No"/>
+	<DeleteObjectsAfter Value="No"/>
+	<DeleteMakefileAfter Value="No"/>
+	<DeleteResourcesAfter Value="No"/>
+	<EnableTheme Value="No"/>
+	<RequiresAdmin Value="No"/>
+	<CompilerType Value="C"/>
+	<AppType Value="CONSOLE"/>
+	<VersionInfo>
+		<VersionNumbers Major="1" Minor="3" Release="0" Build="0"/>
+		<LanguageID Value="1046"/>
+		<CharsetID Value="1252"/>
+		<CompanyName Value="MZSW"/>
+		<FileVersion Value="1.3.0.0"/>
+		<FileDescription Value="Biblioteca para obtenção de peso de item de balanças"/>
+		<InternalName Value="PesoLib.exe"/>
+		<LegalCopyright Value=""/>
+		<LegalTrademarks Value=""/>
+		<OriginalFilename Value="PesoLib.exe"/>
+		<ProductName Value="PesoLib"/>
+		<ProductVersion Value="1.3.0.0"/>
+		<AutoIncrementBuild Value="No"/>
+	</VersionInfo>
+	<Configurations>
+		<Configuration>
+			<ConfigurationName Value="DLL - x64"/>
+			<Libs Value="-shared -Wl,--kill-at,--out-implib,../lib/x64/libPesoLib.dll.a -lwinspool -m64"/>
+			<Flags Value="-I..\include -I..\src\system -I..\src\comm -I..\src\device -I..\src\driver -I..\src\util -I..\src\java\jni -I..\src\java\jni\win32 -DBUILD_DLL -m64"/>
+			<Target Value="../bin/x64/PesoLib.dll"/>
+			<CommandLine Value=""/>
+			<CompilerOptions Value="-Wall -s -O2"/>
+			<DeleteObjectsBefore Value="No"/>
+			<DeleteObjectsAfter Value="No"/>
+			<DeleteMakefileAfter Value="No"/>
+			<DeleteResourcesAfter Value="No"/>
+			<EnableTheme Value="No"/>
+			<RequiresAdmin Value="No"/>
+			<CompilerType Value="C"/>
+			<AppType Value="DLL"/>
+			<VersionInfo>
+				<VersionNumbers Major="1" Minor="3" Release="0" Build="0"/>
+				<LanguageID Value="1046"/>
+				<CharsetID Value="1252"/>
+				<CompanyName Value="MZSW"/>
+				<FileVersion Value="1.3.0.0"/>
+				<FileDescription Value="Biblioteca para obtenção de peso de item de balanças"/>
+				<InternalName Value="PesoLib.dll"/>
+				<LegalCopyright Value=""/>
+				<LegalTrademarks Value=""/>
+				<OriginalFilename Value="PesoLib.dll"/>
+				<ProductName Value="PesoLib"/>
+				<ProductVersion Value="1.3.0.0"/>
+				<AutoIncrementBuild Value="No"/>
+			</VersionInfo>
+		</Configuration>
+		<Configuration>
+			<ConfigurationName Value="DLL - x86"/>
+			<Libs Value="-shared -Wl,--out-implib,../lib/x86/libPesoLib.dll.a -Wl,--add-stdcall-alias -lwinspool -m32"/>
+			<Flags Value="-I..\include -I..\src\system -I..\src\comm -I..\src\device -I..\src\driver -I..\src\util -I..\src\java\jni -I..\src\java\jni\win32 -DBUILD_DLL -m32"/>
+			<Target Value="../bin/x86/PesoLib.dll"/>
+			<CommandLine Value=""/>
+			<CompilerOptions Value="-Wall -s -O2"/>
+			<DeleteObjectsBefore Value="No"/>
+			<DeleteObjectsAfter Value="No"/>
+			<DeleteMakefileAfter Value="No"/>
+			<DeleteResourcesAfter Value="No"/>
+			<EnableTheme Value="No"/>
+			<RequiresAdmin Value="No"/>
+			<CompilerType Value="C"/>
+			<AppType Value="DLL"/>
+			<VersionInfo>
+				<VersionNumbers Major="1" Minor="3" Release="0" Build="0"/>
+				<LanguageID Value="1046"/>
+				<CharsetID Value="1252"/>
+				<CompanyName Value="MZSW"/>
+				<FileVersion Value="1.3.0.0"/>
+				<FileDescription Value="Biblioteca para obtenção de peso de item de balanças"/>
+				<InternalName Value="PesoLib.dll"/>
+				<LegalCopyright Value=""/>
+				<LegalTrademarks Value=""/>
+				<OriginalFilename Value="PesoLib.dll"/>
+				<ProductName Value="PesoLib"/>
+				<ProductVersion Value="1.3.0.0"/>
+				<AutoIncrementBuild Value="No"/>
+			</VersionInfo>
+		</Configuration>
+		<Configuration>
+			<ConfigurationName Value="EXE - x64"/>
+			<Libs Value="-lwinspool -m64"/>
+			<Flags Value="-I..\include -I..\src\system -I..\src\comm -I..\src\device -I..\src\driver -I..\src\util -I..\src\java\jni -I..\src\java\jni\win32 -m64 -DDEBUGLIB"/>
+			<Target Value="../bin/x64/PesoLib.exe"/>
+			<CommandLine Value=""/>
+			<CompilerOptions Value="-Wall -s -O2"/>
+			<DeleteObjectsBefore Value="No"/>
+			<DeleteObjectsAfter Value="No"/>
+			<DeleteMakefileAfter Value="No"/>
+			<DeleteResourcesAfter Value="No"/>
+			<EnableTheme Value="No"/>
+			<RequiresAdmin Value="No"/>
+			<CompilerType Value="C"/>
+			<AppType Value="CONSOLE"/>
+			<VersionInfo>
+				<VersionNumbers Major="1" Minor="3" Release="0" Build="0"/>
+				<LanguageID Value="1046"/>
+				<CharsetID Value="1252"/>
+				<CompanyName Value="MZSW"/>
+				<FileVersion Value="1.3.0.0"/>
+				<FileDescription Value="Biblioteca para obtenção de peso de item de balanças"/>
+				<InternalName Value="PesoLib.exe"/>
+				<LegalCopyright Value=""/>
+				<LegalTrademarks Value=""/>
+				<OriginalFilename Value="PesoLib.exe"/>
+				<ProductName Value="PesoLib"/>
+				<ProductVersion Value="1.3.0.0"/>
+				<AutoIncrementBuild Value="No"/>
+			</VersionInfo>
+		</Configuration>
+		<Configuration>
+			<ConfigurationName Value="LIB - x64"/>
+			<Libs Value="-lwinspool -m64"/>
+			<Flags Value="-I..\include -I..\src\system -I..\src\comm -I..\src\device -I..\src\driver -I..\src\util -I..\src\java\jni -I..\src\java\jni\win32 -DLIB_STATIC -m64"/>
+			<Target Value="../lib/x64/libPesoLib.a"/>
+			<CommandLine Value=""/>
+			<CompilerOptions Value="-Wall -s -O2"/>
+			<DeleteObjectsBefore Value="No"/>
+			<DeleteObjectsAfter Value="No"/>
+			<DeleteMakefileAfter Value="No"/>
+			<DeleteResourcesAfter Value="No"/>
+			<EnableTheme Value="No"/>
+			<RequiresAdmin Value="No"/>
+			<CompilerType Value="C"/>
+			<AppType Value="LIB"/>
+		</Configuration>
+		<Configuration>
+			<ConfigurationName Value="LIB - x86"/>
+			<Libs Value="-lwinspool -m32"/>
+			<Flags Value="-I..\include -I..\src\system -I..\src\comm -I..\src\device -I..\src\driver -I..\src\util -I..\src\java\jni -I..\src\java\jni\win32 -DLIB_STATIC -m32"/>
+			<Target Value="../lib/x86/libPesoLib.a"/>
+			<CommandLine Value=""/>
+			<CompilerOptions Value="-Wall -s -O2"/>
+			<DeleteObjectsBefore Value="No"/>
+			<DeleteObjectsAfter Value="No"/>
+			<DeleteMakefileAfter Value="No"/>
+			<DeleteResourcesAfter Value="No"/>
+			<EnableTheme Value="No"/>
+			<RequiresAdmin Value="No"/>
+			<CompilerType Value="C"/>
+			<AppType Value="LIB"/>
+		</Configuration>
+	</Configurations>
 </Project>

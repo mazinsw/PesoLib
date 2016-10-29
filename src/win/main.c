@@ -1,6 +1,7 @@
 #include <private/Plataforma.h>
 #include <windows.h>
 
+#ifdef BUILD_DLL
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
 	switch(fdwReason)
@@ -13,11 +14,12 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 	}
 	return TRUE; // succesful
 }
-#ifdef DEBUGLIB
+#endif
+
+#if !defined(BUILD_DLL) && !defined(LIB_STATIC)
 #include "PesoLib.h"
 #include "CommPort.h"
 #include <stdio.h>
-#include <windows.h>
 
 int main(int argc, char** argv)
 {

@@ -12,10 +12,16 @@ typedef void (LIBCALL * PesoLib_liberaFunc)(PesoLib*);
 typedef void (LIBCALL * PesoLib_setConfiguracaoFunc)(PesoLib*, const char*);
 typedef const char * (LIBCALL * PesoLib_getConfiguracaoFunc)(PesoLib*);
 
+#ifdef __MINGW64__
+#define DLL_FILE "../bin/x64/PesoLib.dll"
+#else
+#define DLL_FILE "../bin/x86/PesoLib.dll"
+#endif
+
 int main(int argc, char *argv[])
 {
 	DWORD startTick = GetTickCount();
-	HMODULE hModule = LoadLibrary("../bin/PesoLib.dll");
+	HMODULE hModule = LoadLibrary(DLL_FILE);
 	PesoLib_criaFunc _PesoLib_cria;
 	PesoLib_getUltimoPesoFunc _PesoLib_getUltimoPeso;
 	PesoLib_solicitaPesoFunc _PesoLib_solicitaPeso;

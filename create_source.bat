@@ -1,5 +1,5 @@
 @echo OFF 
-SET version="1.2.0.0"
+SET version="1.3.0.0"
 SET filename="%~d0%~p0bin\releases\pesolib-%version%.zip"
 del %filename%
 
@@ -12,4 +12,4 @@ del %filename%
 "%programfiles%\7-zip\7z" -tzip a %filename% docs -xr!.svn
 "%programfiles%\7-zip\7z" -tzip a %filename% include -xr!.svn
 "%programfiles%\7-zip\7z" -tzip a %filename% lib -xr!.svn
-"%programfiles%\7-zip\7z" -tzip a %filename% wrapper -xr!.svn -xr!.metadata -xr!bin -xr!*.exe -xr!*.dcu
+"%programfiles%\7-zip\7z" -tzip a %filename% wrapper -xr!.svn -xr!.metadata -xr!bin -xr!__history -xr!*.exe -xr!*.dcu -xr!*.identcache -xr!*.stat -xr!*.dproj.local

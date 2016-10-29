@@ -1,5 +1,6 @@
 CC     = gcc
-WINDRES= windres
+AR     = ar
+RANLIB = ranlib
 RM     = rm -f
 OBJS   = ../src/PesoLib.o \
          ../src/device/Device.o \
@@ -15,21 +16,21 @@ OBJS   = ../src/PesoLib.o \
          ../src/win/Mutex.o \
          ../src/win/Thread.o \
          ../src/util/StringBuilder.o \
-         ../src/java/br_com_mzsw_PesoLibWrapper.o \
-         AppResource.res
+         ../src/java/br_com_mzsw_PesoLibWrapper.o
 
-LIBS   = -shared -Wl,--kill-at -lwinspool -m32
-CFLAGS = -I..\include -I..\src\system -I..\src\comm -I..\src\device -I..\src\driver -I..\src\util -I..\src\java\jni -I..\src\java\jni\win32 -DBUILD_DLL -DDEBUGLIB2 -m32 -fno-diagnostics-show-option
+LIBS   = -lwinspool -m32
+CFLAGS = -I..\include -I..\src\system -I..\src\comm -I..\src\device -I..\src\driver -I..\src\util -I..\src\java\jni -I..\src\java\jni\win32 -DLIB_STATIC -m32 -fno-diagnostics-show-option
 
-.PHONY: ../bin/x86/PesoLib.dll clean
+.PHONY: ../lib/x86/libPesoLib.a clean
 
-all: ../bin/x86/PesoLib.dll
+all: ../lib/x86/libPesoLib.a
 
 clean:
-	$(RM) $(OBJS) ../bin/x86/PesoLib.dll
+	$(RM) $(OBJS) ../lib/x86/libPesoLib.a
 
-../bin/x86/PesoLib.dll: $(OBJS)
-	$(CC) -Wall -s -O2 -o $@ $(OBJS) $(LIBS)
+../lib/x86/libPesoLib.a: $(OBJS)
+	$(AR) rc $@ $(OBJS)
+	$(RANLIB) $@
 
 ../src/PesoLib.o: ../src/PesoLib.c ../src/system/Thread.h ../src/system/Mutex.h ../src/system/Event.h ../src/comm/CommPort.h ../src/device/DeviceManager.h ../src/util/StringBuilder.h ../src/system/Mutex.h
 	$(CC) -Wall -s -O2 -c $< -o $@ $(CFLAGS)
@@ -75,7 +76,4 @@ clean:
 
 ../src/java/br_com_mzsw_PesoLibWrapper.o: ../src/java/br_com_mzsw_PesoLibWrapper.c ../src/java/br_com_mzsw_PesoLibWrapper.h ../include/PesoLib.h
 	$(CC) -Wall -s -O2 -c $< -o $@ $(CFLAGS)
-
-AppResource.res: AppResource.rc
-	$(WINDRES) -i AppResource.rc -J rc -o AppResource.res -O coff -F pe-i386
 
