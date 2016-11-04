@@ -20,7 +20,34 @@ int Toledo_init(Device* _dev)
 	return 1;
 }
 
-static int _Toledo_execute(const unsigned char* buffer, int size,
+static int _Toledo_execute_live(const unsigned char* buffer, int size,
+	int * peso, int * stable)
+{
+	if(size < 8 || buffer[0] != 0x02 || buffer[7] != 13)
+		return 0;
+	int i;
+	int _peso = 0, mult = 1;
+	// STX 00.250 CR
+	for(i = 6; i >= 1; i--)
+	{
+		if(i == 3 && buffer[i] == '.')
+			continue;
+		if(i == 1 && buffer[i] == '-')
+		{
+			*stable = 0;
+			return 7;
+		}
+		if(buffer[i] < '0' || buffer[i] > '9')
+			return 0;
+		_peso += mult * (buffer[i] - '0');
+		mult *= 10;
+	}
+	*peso = _peso;
+	*stable = 1;
+	return 7;
+}
+
+static int _Toledo_execute_normal(const unsigned char* buffer, int size,
 	int * peso, int * stable)
 {
 	if(size < 7 || buffer[0] != 0x02 || buffer[6] != 0x03)
@@ -56,6 +83,16 @@ static int _Toledo_execute(const unsigned char* buffer, int size,
 	*peso = _peso;
 	*stable = 1;
 	return 7;
+}
+
+static int _Toledo_execute(const unsigned char* buffer, int size,
+	int * peso, int * stable)
+{
+	int r = _Toledo_execute_normal(buffer, size, peso, stable);
+	if(r != 0)
+		return r;
+	return _Toledo_execute_live(buffer, size, peso, stable);
+	
 }
 
 int Toledo_execute(Device* _dev, const unsigned char* buffer, int size)
@@ -94,7 +131,7 @@ const char* Toledo_getProperty(Device* _dev, const char* key)
 	}
 	if(strcmp("response_size", key) == 0)
 	{
-		static const char * rsize = "7";
+		static const char * rsize = "8";
 		return rsize;
 	}
 	return NULL;

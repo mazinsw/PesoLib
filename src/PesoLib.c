@@ -129,13 +129,17 @@ static void _PesoLib_receiveFunc(void* data)
 #endif
 			if(bytesAvailable == 0)
 				continue;
+			if(bytesAvailable > 255)
+				bytesAvailable = 255;
 			unsigned char * buffer = (unsigned char *)malloc(
 				sizeof(unsigned char) * (bytesSaved + bytesAvailable + 1));
-			bytesAvailable = CommPort_readEx(lib->comm, buffer + bytesSaved, bytesAvailable, lib->requestAliveInterval);
+			int bytesRead = CommPort_readEx(lib->comm, buffer + bytesSaved, bytesAvailable, lib->requestAliveInterval);
+			bytesAvailable = bytesRead < bytesAvailable?bytesRead:bytesAvailable;
 			if(bytesAvailable > 0)
 			{
 #ifdef DEBUGLIB
 				printf("%d bytes read\n", bytesAvailable);
+				printf("%d bytes saved\n", bytesSaved);
 #endif
 				buffer[bytesSaved + bytesAvailable] = 0;
 				memcpy(buffer, savedBuff, bytesSaved);
@@ -228,17 +232,20 @@ static int _PesoLib_echoTest(PesoLib * lib, CommPort* comm, int testCount)
 				free(savedBuff);
 				break;
 			}
+#ifdef DEBUGLIB
+			printf("%d bytes available\n", bytesAvailable);
+#endif
 			if(bytesAvailable <= 0)
 			{
 				free(savedBuff);
 				break;
 			}
-#ifdef DEBUGLIB
-			printf("%d bytes available\n", bytesAvailable);
-#endif
+			if(bytesAvailable > 255)
+				bytesAvailable = 255;
 			unsigned char * buff = (unsigned char *)malloc(
 					sizeof(unsigned char) * (savedBytes + bytesAvailable + 1));
-			bytesAvailable = CommPort_readEx(comm, buff + savedBytes, bytesAvailable, lib->connectTimeout / 2);
+			int bytesRead = CommPort_readEx(comm, buff + savedBytes, bytesAvailable, lib->connectTimeout / 2);
+			bytesAvailable = bytesRead < bytesAvailable?bytesRead:bytesAvailable;
 			if(bytesAvailable <= 0)
 			{
 				free(buff);

@@ -71,18 +71,18 @@
 	<CompilerType Value="C"/>
 	<AppType Value="CONSOLE"/>
 	<VersionInfo>
-		<VersionNumbers Major="1" Minor="3" Release="0" Build="0"/>
+		<VersionNumbers Major="1" Minor="4" Release="0" Build="0"/>
 		<LanguageID Value="1046"/>
 		<CharsetID Value="1252"/>
 		<CompanyName Value="MZSW"/>
-		<FileVersion Value="1.3.0.0"/>
+		<FileVersion Value="1.4.0.0"/>
 		<FileDescription Value="Biblioteca para obtenção de peso de item de balanças"/>
 		<InternalName Value="PesoLib.exe"/>
 		<LegalCopyright Value=""/>
 		<LegalTrademarks Value=""/>
 		<OriginalFilename Value="PesoLib.exe"/>
 		<ProductName Value="PesoLib"/>
-		<ProductVersion Value="1.3.0.0"/>
+		<ProductVersion Value="1.4.0.0"/>
 		<AutoIncrementBuild Value="No"/>
 	</VersionInfo>
 	<Configurations>
@@ -102,18 +102,18 @@
 			<CompilerType Value="C"/>
 			<AppType Value="DLL"/>
 			<VersionInfo>
-				<VersionNumbers Major="1" Minor="3" Release="0" Build="0"/>
+				<VersionNumbers Major="1" Minor="4" Release="0" Build="0"/>
 				<LanguageID Value="1046"/>
 				<CharsetID Value="1252"/>
 				<CompanyName Value="MZSW"/>
-				<FileVersion Value="1.3.0.0"/>
+				<FileVersion Value="1.4.0.0"/>
 				<FileDescription Value="Biblioteca para obtenção de peso de item de balanças"/>
 				<InternalName Value="PesoLib.dll"/>
 				<LegalCopyright Value=""/>
 				<LegalTrademarks Value=""/>
 				<OriginalFilename Value="PesoLib.dll"/>
 				<ProductName Value="PesoLib"/>
-				<ProductVersion Value="1.3.0.0"/>
+				<ProductVersion Value="1.4.0.0"/>
 				<AutoIncrementBuild Value="No"/>
 			</VersionInfo>
 		</Configuration>
@@ -133,18 +133,18 @@
 			<CompilerType Value="C"/>
 			<AppType Value="DLL"/>
 			<VersionInfo>
-				<VersionNumbers Major="1" Minor="3" Release="0" Build="0"/>
+				<VersionNumbers Major="1" Minor="4" Release="0" Build="0"/>
 				<LanguageID Value="1046"/>
 				<CharsetID Value="1252"/>
 				<CompanyName Value="MZSW"/>
-				<FileVersion Value="1.3.0.0"/>
+				<FileVersion Value="1.4.0.0"/>
 				<FileDescription Value="Biblioteca para obtenção de peso de item de balanças"/>
 				<InternalName Value="PesoLib.dll"/>
 				<LegalCopyright Value=""/>
 				<LegalTrademarks Value=""/>
 				<OriginalFilename Value="PesoLib.dll"/>
 				<ProductName Value="PesoLib"/>
-				<ProductVersion Value="1.3.0.0"/>
+				<ProductVersion Value="1.4.0.0"/>
 				<AutoIncrementBuild Value="No"/>
 			</VersionInfo>
 		</Configuration>
@@ -164,18 +164,18 @@
 			<CompilerType Value="C"/>
 			<AppType Value="CONSOLE"/>
 			<VersionInfo>
-				<VersionNumbers Major="1" Minor="3" Release="0" Build="0"/>
+				<VersionNumbers Major="1" Minor="4" Release="0" Build="0"/>
 				<LanguageID Value="1046"/>
 				<CharsetID Value="1252"/>
 				<CompanyName Value="MZSW"/>
-				<FileVersion Value="1.3.0.0"/>
+				<FileVersion Value="1.4.0.0"/>
 				<FileDescription Value="Biblioteca para obtenção de peso de item de balanças"/>
 				<InternalName Value="PesoLib.exe"/>
 				<LegalCopyright Value=""/>
 				<LegalTrademarks Value=""/>
 				<OriginalFilename Value="PesoLib.exe"/>
 				<ProductName Value="PesoLib"/>
-				<ProductVersion Value="1.3.0.0"/>
+				<ProductVersion Value="1.4.0.0"/>
 				<AutoIncrementBuild Value="No"/>
 			</VersionInfo>
 		</Configuration>
