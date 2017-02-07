@@ -5,6 +5,7 @@ RM     = rm -f
 OBJS   = ../src/PesoLib.o \
          ../src/device/Device.o \
          ../src/device/DeviceManager.o \
+         ../src/driver/Elgin.o \
          ../src/driver/Magna.o \
          ../src/driver/Filizola.o \
          ../src/driver/Toledo.o \
@@ -21,12 +22,15 @@ OBJS   = ../src/PesoLib.o \
 LIBS   = -lwinspool -m32
 CFLAGS = -I..\include -I..\src\system -I..\src\comm -I..\src\device -I..\src\driver -I..\src\util -I..\src\java\jni -I..\src\java\jni\win32 -DLIB_STATIC -m32 -fno-diagnostics-show-option
 
-.PHONY: ../lib/x86/libPesoLib.a clean
+.PHONY: all
 
 all: ../lib/x86/libPesoLib.a
 
 clean:
 	$(RM) $(OBJS) ../lib/x86/libPesoLib.a
+
+clear:
+	$(RM) $(OBJS)
 
 ../lib/x86/libPesoLib.a: $(OBJS)
 	$(AR) rc $@ $(OBJS)
@@ -38,7 +42,10 @@ clean:
 ../src/device/Device.o: ../src/device/Device.c ../src/device/Device.h ../src/device/DevicePrivate.h
 	$(CC) -Wall -s -O2 -c $< -o $@ $(CFLAGS)
 
-../src/device/DeviceManager.o: ../src/device/DeviceManager.c ../src/device/DeviceManager.h ../src/driver/Filizola.h ../src/driver/Toledo.h ../src/driver/Alfa.h ../src/driver/Magna.h ../src/driver/Urano.h ../src/util/StringBuilder.h
+../src/device/DeviceManager.o: ../src/device/DeviceManager.c ../src/device/DeviceManager.h ../src/driver/Filizola.h ../src/driver/Toledo.h ../src/driver/Alfa.h ../src/driver/Magna.h ../src/driver/Urano.h ../src/driver/Elgin.h ../src/util/StringBuilder.h
+	$(CC) -Wall -s -O2 -c $< -o $@ $(CFLAGS)
+
+../src/driver/Elgin.o: ../src/driver/Elgin.c ../src/driver/Elgin.h ../src/device/DevicePrivate.h
 	$(CC) -Wall -s -O2 -c $< -o $@ $(CFLAGS)
 
 ../src/driver/Magna.o: ../src/driver/Magna.c ../src/driver/Magna.h ../src/device/DevicePrivate.h

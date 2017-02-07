@@ -1,0 +1,11 @@
+Envia:
+0x05 - Enquiry, Pergunta
+
+Recebe:
+Para protocolo Urano 12:
+
+
+Para protocolo Urano C:
+
+exemplo:
+send(COM1, );

@@ -11,16 +11,23 @@
 #include "StringBuilder.h"
 #include "Mutex.h"
 #define PROPERY_BUFFER_SIZE 256
+#define BUFFER_SIZE 256
+#define CMD_SIZE 16
 static DeviceManager * gDevMan = NULL;
 static const char gVersion[] = "1.2.0.0";
-static const int baundValues[] = {9600, 2400, 4800, 14400, 19200, 38400, 57600, 115200, 230400, 460800, 921600, 110, 300, 600, 1200};
+static const int REPEAT_BAUND = 19200;
+static const int baundValues[] = {9600, 2400, 4800, 19200, 14400, 38400, 57600, 115200, 230400, 460800, 921600, 110, 300, 600, 1200};
 
 struct PesoLib
 {
 	int canceled;
+	int abandoned;
+	int testing;
 	Thread* thConnect;
 	Thread* thReceive;
+	Thread* thAlive;
 	Event* evCancel;
+	Event* evDetected;
 	Event* evReceive;
 	Event* evConnect;
 	CommPort * comm;
@@ -35,249 +42,205 @@ struct PesoLib
 	char port[8];
 	CommSettings commSettings;
 	StringBuilder* config;
-	Mutex* mutex;
 	Mutex* writeMutex;
 };
 
-static int _PesoLib_echoTest(PesoLib * lib, CommPort* comm, int testCount);
+static int _PesoLib_echoTest(PesoLib * lib);
 
 static void _PesoLib_reconnect(PesoLib * lib)
 {
-#ifdef DEBUGLIB
-	printf("disconnecting device\n");
-#endif
-	CommPort_free(lib->comm);
-#ifdef DEBUGLIB
-	printf("comm port freed\n");
-#endif
-	lib->comm = NULL;
-	Event_post(lib->evConnect);
-#ifdef DEBUGLIB
-	printf("sent disconnect event\n");
-#endif
-	lib->canceled = 1;
+	PesoLib_cancela(lib);
+	if (lib->canceled)
+		return;
 	Thread_start(lib->thConnect); // try connect again
 }
 
 static int _PesoLib_dataReceived(PesoLib * lib, const unsigned char * buffer, 
-	int size, int deviceIndex, int testCount)
+	int size)
 {
-	int count = 0, consummed = 0, save_consummed;
-	const char * val;
+	int count = DeviceManager_getDeviceCount(gDevMan);
+	int dev_index = lib->deviceIndex;
+	int max_response_size = 0;
+	int consummed = 0;
+	int min_response, max_response, i, index, offset;
 #ifdef DEBUGLIB
-	printf("Data received %s\n", buffer);
+	printf("Data received (%d byte): %s\n", size, buffer);
 #endif
-	Device * dev = DeviceManager_getDevice(gDevMan, deviceIndex);
-	while(1)
+	for(i = 0; i < count; i++)
 	{
-		consummed = Device_test(dev, buffer, size);
+		index = i;
+		if(i == 0 && dev_index >= 0)
+			index = dev_index;
+		else if(i == dev_index && dev_index >= 0)
+			index = 0;
+		Device * dev = DeviceManager_getDevice(gDevMan, index);
+		Device_getResponseRange(dev, &min_response, &max_response);
+		max_response_size = max_response > max_response_size?max_response:max_response_size;
+#ifdef DEBUGLIB
+		printf("Using %s driver\n", Device_getName(dev));
+#endif
+		offset = 0;
+		while((size - offset) >= min_response)
+		{
+			consummed = Device_execute(dev, buffer + offset, size - offset);
+			if(consummed)
+				break;
+			offset++;
+		}
 		if(!consummed)
-#ifdef DEBUGLIB
-		{
-			printf("Incompatible device driver\n");
-#endif
-			return count;
-#ifdef DEBUGLIB
-		}
-		printf("Using %s driver\n", Device_getProperty(dev, "name"));
-#endif
-		save_consummed = consummed;
-		consummed = Device_execute(dev, buffer, size);
-		val = NULL;
-		if(consummed)
-		{
-			val = Device_getProperty(dev, "weight");
-			if(val == NULL) // property not found
-				return count;
-		}
-		else
-			consummed = save_consummed; // restore unstable buffer size
-		if(testCount > 0)
-			testCount--;
-		else if(val != NULL) // stable weight
-		{
-			lib->weight = atoi(val);
-			Event_post(lib->evReceive);
-		}
-		count++;
-		buffer += consummed;
-		size -= consummed;
-		if(size <= 0)
+			continue;
+		consummed += offset;
+		Event_post(lib->evDetected);
+		dev_index = index;
+		if (lib->testing)
 			break;
+		Event_reset(lib->evDetected);
+#ifdef DEBUGLIB
+		printf("Checking stable %s = %d\n", Device_getName(dev), Device_isStable(dev));
+#endif
+		if(!Device_isStable(dev))
+			break;
+		lib->weight = Device_getWeight(dev);
+		Event_post(lib->evReceive);
+		break;
 	}
-	return count;
+	lib->deviceIndex = dev_index; // novo dispositivo ou restaura anterior
+	if(consummed == 0 && size > max_response_size)
+		consummed = size - max_response_size + 1; // já verificou esses bytes
+	return consummed;
+}
+
+static void _PesoLib_aliveTest(void* data)
+{
+	PesoLib * lib = (PesoLib*)data;
+	if(!_PesoLib_echoTest(lib))
+	{
+		if (lib->canceled)
+			return;
+		_PesoLib_reconnect(lib);// try connect again
+	}
+	else 
+	{
+#ifdef DEBUGLIB
+		printf("Device alive\n");
+#endif
+	}
 }
 
 static void _PesoLib_receiveFunc(void* data)
 {
 	PesoLib * lib = (PesoLib*)data;
-	int bytesAvailable, bytesSaved = 0;
-#ifdef DEBUGLIB
-	printf("waiting for receive event\n");
-#endif
-	unsigned char * savedBuff = (unsigned char *)malloc(sizeof(unsigned char));
-	Device * dev = DeviceManager_getDevice(gDevMan, lib->deviceIndex);
-	const char * csz = Device_getProperty(dev, "response_size");
-	int sz = (csz == NULL? 0: atoi(csz));
-	Mutex_lock(lib->mutex);
-	while(lib->canceled == 0)
+	unsigned char buffer[BUFFER_SIZE];
+	unsigned char window[BUFFER_SIZE + 1];
+	int window_size = 0;
+	int buffer_size;
+	int remaining, consumed, unused, used;
+
+	while(lib->canceled == 0 && lib->abandoned == 0)
 	{
-		if(CommPort_waitEx(lib->comm, &bytesAvailable, lib->requestAliveInterval))
-		{
 #ifdef DEBUGLIB
-			printf("%d bytes available\n", bytesAvailable);
+	printf("Waiting for receive event\n");
 #endif
-			if(bytesAvailable == 0)
-				continue;
-			if(bytesAvailable > 255)
-				bytesAvailable = 255;
-			unsigned char * buffer = (unsigned char *)malloc(
-				sizeof(unsigned char) * (bytesSaved + bytesAvailable + 1));
-			int bytesRead = CommPort_readEx(lib->comm, buffer + bytesSaved, bytesAvailable, lib->requestAliveInterval);
-			bytesAvailable = bytesRead < bytesAvailable?bytesRead:bytesAvailable;
-			if(bytesAvailable > 0)
-			{
+		buffer_size = CommPort_readEx(lib->comm, buffer, BUFFER_SIZE, lib->requestAliveInterval);
 #ifdef DEBUGLIB
-				printf("%d bytes read\n", bytesAvailable);
-				printf("%d bytes saved\n", bytesSaved);
+		printf("Bytes received: %d\n", buffer_size);
 #endif
-				buffer[bytesSaved + bytesAvailable] = 0;
-				memcpy(buffer, savedBuff, bytesSaved);
-				int r = _PesoLib_dataReceived(lib, buffer, bytesSaved + bytesAvailable, 
-					lib->deviceIndex, 0);
-				bytesSaved = bytesSaved + bytesAvailable;
-				if(r == 0 && bytesSaved < sz)
-				{
-					free(savedBuff);
-					savedBuff = buffer;
-					continue;
-				}
-				bytesSaved = 0;
-				if(r != 0) 
-				{					
-					free(buffer);
-					continue;
-				}
-			}
-			free(buffer);
-		}
-		if(lib->canceled == 1)
+		buffer_size = buffer_size < BUFFER_SIZE?buffer_size:BUFFER_SIZE;
+		if(lib->canceled == 1 || lib->abandoned == 1)
 			continue;
-		else
+		if(buffer_size == 0 && lib->testing == 0)
 		{
-			if(!_PesoLib_echoTest(lib, lib->comm, 1))
-			{
-				if(lib->canceled == 1)
-					continue;
-				_PesoLib_reconnect(lib);// try connect again
-			} 
-			else 
-			{
+			Thread_start(lib->thAlive);
+			continue;
+		}
+		if(buffer_size == 0)
+			continue;
 #ifdef DEBUGLIB
-				printf("device alive\n");
+		printf("Bytes read: %d\n", buffer_size);
 #endif
+		remaining = buffer_size;
+		consumed = 0;
+		while(remaining > 0 || consumed > 0)
+		{
+			unused = BUFFER_SIZE - window_size;
+			consumed = remaining < unused?remaining:unused;
+			if(consumed == 0 && remaining > 0)
+				consumed++; // consome pelo menos 1 byte
+			used = buffer_size - remaining;
+			remaining -= consumed;
+			if(consumed > unused)
+			{
+				memmove(window, window + consumed, BUFFER_SIZE - consumed);
+				window_size -= consumed;
 			}
+			memcpy(window + window_size, buffer + used, consumed);
+			window_size += consumed;
+#ifdef DEBUGLIB
+			window[window_size] = 0; // permite mostrar como texto
+#endif
+			consumed = _PesoLib_dataReceived(lib, window, window_size);
+			window_size -= consumed;
+			if(window_size > 0)
+				memmove(window, window + consumed, BUFFER_SIZE - consumed);
+			if(consumed > 0 && window_size == 0)
+				consumed = 0;
 		}
 	}
-	Mutex_unlock(lib->mutex);
-	free(savedBuff);
-#ifdef DEBUGLIB
-	printf("leave _PesoLib_receiveFunc\n");
-#endif
 }
 
-static int _PesoLib_echoTest(PesoLib * lib, CommPort* comm, int testCount)
+static int _PesoLib_echoTest(PesoLib * lib)
 {
+	int count = DeviceManager_getDeviceCount(gDevMan);
+	int cmds_count; // unique cmd count
+	unsigned char ** cmds = (unsigned char**)malloc((sizeof(unsigned char*) + CMD_SIZE) * count);
+	int * cmds_size = (int*)malloc(sizeof(int) * count);
+	
+	int i, j, size, index, result = 0;
+	unsigned char buffer[CMD_SIZE];
+	int dev_index = lib->deviceIndex;
+	int old_testing = lib->testing;
+
 #ifdef DEBUGLIB
 	printf("Echo test started\n");
 #endif
-	int count = DeviceManager_getDeviceCount(gDevMan);
-	int i, size, oldSize, bytesAvailable, bwritten, curr_index;
-	unsigned char buffer[16], oldBuffer[16];
-	size = 0;
-	int dev_index = lib->deviceIndex;
+	cmds_count = 0;	
+	lib->testing = 1;
 	for(i = 0; i < count; i++)
 	{
-		curr_index = i;
+		index = i;
 		if(i == 0 && dev_index >= 0)
-			curr_index = dev_index;
+			index = dev_index;
 		else if(i == dev_index && dev_index >= 0)
-			curr_index = 0;
-		Device * dev = DeviceManager_getDevice(gDevMan, curr_index);
-		oldSize = size;
-		memcpy(oldBuffer, buffer, size);
-		size = Device_makeCmd(dev, "getweight", NULL, buffer, 16);
-		const char * csz = Device_getProperty(dev, "response_size");
-		int sz = (csz == NULL? 0: atoi(csz));
-		// check for errors or alreay sent command
-		if(size <= 0 || (size == oldSize && memcmp(buffer, oldBuffer, size) == 0))
-			continue;
-#ifdef DEBUGLIB
-		printf("trying communication with %s device driver\n", Device_getProperty(dev, "name"));
-#endif
-		Mutex_lock(lib->writeMutex);
-		bwritten = CommPort_writeEx(comm, buffer, size, lib->connectTimeout / 2);
-		Mutex_unlock(lib->writeMutex);
-		if(bwritten != size)
-			break;
-#ifdef DEBUGLIB
-		printf("%d byte written\n", bwritten);
-#endif
-		int savedBytes = 0;
-		unsigned char * savedBuff = (unsigned char *)malloc(sizeof(unsigned char));
-		while(1)
+			index = 0;
+		cmds[i] = (unsigned char *)(cmds + count) + i * CMD_SIZE;
+		Device * dev = DeviceManager_getDevice(gDevMan, index);
+		size = Device_makeCmd(dev, DEV_CMD_GET_WEIGHT, NULL, buffer, CMD_SIZE);
+		// procura comando repedido
+		for(j = 0; j < cmds_count; j++)
 		{
-			if(!CommPort_waitEx(comm, &bytesAvailable, lib->connectTimeout / 2))
-			{
-				free(savedBuff);
+			if(cmds_size[j] == size && memcmp(cmds[j], buffer, size) == 0)
 				break;
-			}
-#ifdef DEBUGLIB
-			printf("%d bytes available\n", bytesAvailable);
-#endif
-			if(bytesAvailable <= 0)
-			{
-				free(savedBuff);
-				break;
-			}
-			if(bytesAvailable > 255)
-				bytesAvailable = 255;
-			unsigned char * buff = (unsigned char *)malloc(
-					sizeof(unsigned char) * (savedBytes + bytesAvailable + 1));
-			int bytesRead = CommPort_readEx(comm, buff + savedBytes, bytesAvailable, lib->connectTimeout / 2);
-			bytesAvailable = bytesRead < bytesAvailable?bytesRead:bytesAvailable;
-			if(bytesAvailable <= 0)
-			{
-				free(buff);
-				free(savedBuff);
-				break;
-			}
-#ifdef DEBUGLIB
-			printf("%d bytes read\n", bytesAvailable);
-			printf("%d bytes available\n", savedBytes + bytesAvailable);
-#endif
-			buff[savedBytes + bytesAvailable] = 0;
-			memcpy(buff, savedBuff, savedBytes);
-			free(savedBuff);
-			if(_PesoLib_dataReceived(lib, buff, savedBytes + bytesAvailable, curr_index, testCount))
-			{
-				free(buff);
-				lib->deviceIndex = curr_index;
-				return 1;
-			}
-			if(savedBytes >= sz)
-			{
-				free(buff);
-				break;
-			}
-			savedBuff = buff;
-			savedBytes = savedBytes + bytesAvailable;
 		}
+		if(j < cmds_count)
+			continue; // comando repetido
+		memcpy(cmds[cmds_count], buffer, size);
+		cmds_size[cmds_count] = size;
+		cmds_count++;
+		// código único e primeiro dispositivo, tenta comunicação
+		lib->deviceIndex = index;
+		PesoLib_solicitaPeso(lib, 0.00);
+		Event* object = Event_waitMultipleEx(&lib->evDetected, 1, lib->connectTimeout);
+		if(object != lib->evDetected)
+			continue;
+		dev_index = lib->deviceIndex;
+		result = 1;
+		break;
 	}
-#ifdef DEBUGLIB
-	printf("No compatible device driver\n");
-#endif
-	return 0;
+	free(cmds_size);
+	free(cmds);
+	lib->testing = old_testing;
+	lib->deviceIndex = dev_index; // novo dispositivo ou restaura anterior
+	return result;
 }
 
 static void _PesoLib_connectFunc(void* data)
@@ -287,11 +250,9 @@ static void _PesoLib_connectFunc(void* data)
 	int i, need, count, len, tried;
 	char * ports, * port;
 #ifdef DEBUGLIB
-	printf("enter _PesoLib_connectFunc\n");
+	printf("Starting connection\n");
 #endif
-	Mutex_lock(lib->mutex);
 	lib->canceled = 0;
-	Mutex_unlock(lib->mutex);
 	count = 0;
 	need = CommPort_enum(NULL, 0);
 	if(lib->port[0] != 0)
@@ -307,7 +268,7 @@ static void _PesoLib_connectFunc(void* data)
 	}
 	count += CommPort_enum(ports + len, need);
 #ifdef DEBUGLIB
-	printf("searching port... %d found\n", count);
+	printf("Searching port... %d found\n", count);
 #endif
 	tried = 1;
 	while(lib->canceled == 0)
@@ -318,14 +279,21 @@ static void _PesoLib_connectFunc(void* data)
 		for(i = 1; i <= count; i++)
 		{
 #ifdef DEBUGLIB
-			printf("trying connect to %s baund %d\n", port, lib->commSettings.baund);
+			printf("Trying connect to %s baund %d\n", port, lib->commSettings.baund);
 #endif
 			comm = CommPort_createEx(port, &lib->commSettings);
 			if(comm != NULL)
 			{
-				if(_PesoLib_echoTest(lib, comm, 0x7FFFFFFF))
+				// connection successful, start receive event
+				lib->comm = comm;
+				Thread_start(lib->thReceive);
+				if(_PesoLib_echoTest(lib))
 					break;
+				lib->abandoned = 1;
+				CommPort_cancel(lib->comm);
+				Thread_join(lib->thReceive);
 				CommPort_free(comm);
+				lib->abandoned = 0;
 				comm = NULL;
 			}
 			if(lib->canceled == 1)
@@ -337,22 +305,19 @@ static void _PesoLib_connectFunc(void* data)
 #ifdef DEBUGLIB
 			printf("%s connected\n", port);
 #endif
-			// connection successful, start receive event
-			lib->comm = comm;
 			strcpy(lib->port, port);
 			Event_post(lib->evConnect);
-			Thread_start(lib->thReceive);
 			break;
 		}
 #ifdef DEBUGLIB
-		printf("no port available, trying again\n");
+		printf("No port available, trying again\n");
 #endif
 		if(lib->canceled == 1)
 			break;
 		// not port available, wait few seconds and try again
 		Thread_wait(lib->retryTimeout);
 		lib->baundIndex = (lib->baundIndex + 1) % (sizeof(baundValues) / sizeof(int));
-		if(tried < 3 && baundValues[lib->baundIndex] > 9600)
+		if(tried < 3 && baundValues[lib->baundIndex] > REPEAT_BAUND)
 		{
 			lib->baundIndex = 0;
 			tried++;
@@ -364,9 +329,6 @@ static void _PesoLib_connectFunc(void* data)
 		lib->commSettings.baund = baundValues[lib->baundIndex];
 	}
 	free(ports);
-#ifdef DEBUGLIB
-	printf("leave _PesoLib_connectFunc\n");
-#endif
 }
 
 static int _PesoLib_getProperty(const char * lwconfig, const char * config, 
@@ -389,7 +351,7 @@ static int _PesoLib_getProperty(const char * lwconfig, const char * config,
 	strncpy(buffer, config + (pos - lwconfig), count);
 	buffer[count] = 0;
 #ifdef DEBUGLIB
-	printf("property %s: value %s\n", key, buffer);
+	printf("Property %s: value %s\n", key, buffer);
 #endif
 	return 1;
 }
@@ -397,8 +359,9 @@ static int _PesoLib_getProperty(const char * lwconfig, const char * config,
 LIBEXPORT PesoLib * LIBCALL PesoLib_cria(const char* config)
 {
 	PesoLib * lib = (PesoLib*)malloc(sizeof(PesoLib));
+	lib->testing = 0;
+	lib->abandoned = 0;
 	lib->baundIndex = 0;
-	lib->mutex = Mutex_create();
 	lib->writeMutex = Mutex_create();
 	lib->price = 0.0f;
 	lib->weight = 0;
@@ -406,9 +369,11 @@ LIBEXPORT PesoLib * LIBCALL PesoLib_cria(const char* config)
 	lib->canceled = 0;
 	lib->evCancel = Event_create();
 	lib->evConnect = Event_createEx(0, 0);
+	lib->evDetected = Event_createEx(0, 0);
 	lib->evReceive = Event_createEx(0, 0);
 	lib->thReceive = Thread_create(_PesoLib_receiveFunc, lib);
 	lib->thConnect = Thread_create(_PesoLib_connectFunc, lib);
+	lib->thAlive = Thread_create(_PesoLib_aliveTest, lib);
 	lib->comm = NULL;
 	lib->port[0] = 0;
 	lib->commSettings.baund = baundValues[lib->baundIndex];
@@ -512,26 +477,13 @@ LIBEXPORT void LIBCALL PesoLib_setConfiguracao(PesoLib * lib, const char * confi
 			lib->requestAliveInterval = tm;
 	}
 	free(lwconfig);
-	if(PesoLib_isConectado(lib))
-	{
-		if(portChanged)
-		{
-			lib->canceled = 1;
-			CommPort_cancel(lib->comm);
-			Thread_join(lib->thReceive);
-			_PesoLib_reconnect(lib);// try connect again
-		} 
-		else if(commSettingsChanged) 
-		{
-			if(!CommPort_configure(lib->comm, &lib->commSettings))
-			{
-				lib->canceled = 1;
-				CommPort_cancel(lib->comm);
-				Thread_join(lib->thReceive);
-				_PesoLib_reconnect(lib);// try connect again
-			}
-		}
-	}
+	if(!PesoLib_isConectado(lib))
+		return;
+	if(!portChanged && !commSettingsChanged)
+		return;
+	if(commSettingsChanged) 
+		CommPort_configure(lib->comm, &lib->commSettings);
+	_PesoLib_reconnect(lib);
 }
 
 LIBEXPORT const char* LIBCALL PesoLib_getConfiguracao(PesoLib * lib)
@@ -595,7 +547,7 @@ LIBEXPORT int LIBCALL PesoLib_aguardaEvento(PesoLib * lib)
 {
 	Event* events[3];
 #ifdef DEBUGLIB
-		printf("PesoLib_aguardaEvento\n");
+		printf("Waiting weight event\n");
 #endif
 	events[0] = lib->evCancel;
 	events[1] = lib->evConnect;
@@ -631,54 +583,70 @@ LIBEXPORT int LIBCALL PesoLib_recebePeso(PesoLib * lib, int* gramas)
 
 LIBEXPORT int LIBCALL PesoLib_solicitaPeso(PesoLib * lib, float preco)
 {
+	unsigned char buffer[CMD_SIZE];
+	char bufPreco[20];
+	int size;
+	int price_size;
+	int bwritten = 0;
+	
 	if(!PesoLib_isConectado(lib) || lib->deviceIndex < 0)
 		return 0;
-	unsigned char buffer[16];
-	char bufPreco[16];
-	int size;
+#ifdef DEBUGLIB
+	printf("Requesting weight\n");
+#endif
 	sprintf(bufPreco, "%d", (int)(preco * 100));
 	Device * dev = DeviceManager_getDevice(gDevMan, lib->deviceIndex);
-	size = Device_makeCmd(dev, "setprice", bufPreco, buffer, 16);
-	if(size > 0 && preco >= 0.01)
+	price_size = Device_makeCmd(dev, DEV_CMD_SET_PRICE, bufPreco, buffer, CMD_SIZE);
+	if(price_size > 0 && preco > 0.005)
 	{
 		Mutex_lock(lib->writeMutex);
-		CommPort_write(lib->comm, buffer, size);
+		bwritten = CommPort_writeEx(lib->comm, buffer, price_size, lib->connectTimeout / 2);
 		Mutex_unlock(lib->writeMutex);
 	}
-	size = Device_makeCmd(dev, "getweight", bufPreco, buffer, 16);
-	if(size <= 0)
-		return 0;
+	size = Device_makeCmd(dev, DEV_CMD_GET_WEIGHT, bufPreco, buffer, CMD_SIZE);
+	if(size == 0)
+		return bwritten == price_size;
 	Mutex_lock(lib->writeMutex);
-	int bwritten = CommPort_write(lib->comm, buffer, size);
+	bwritten = CommPort_writeEx(lib->comm, buffer, size, lib->connectTimeout / 2);
 	Mutex_unlock(lib->writeMutex);
-	if(bwritten != size)
-		return 0;
-	return 1;
+	return bwritten == size;
 }
 
 LIBEXPORT void LIBCALL PesoLib_cancela(PesoLib * lib)
 {
+#ifdef DEBUGLIB
+	printf("Disconnecting device\n");
+#endif
 	lib->canceled = 1;
-	if(lib->comm != NULL)
-		CommPort_cancel(lib->comm);
+	if(!PesoLib_isConectado(lib))
+		return;
+	CommPort_cancel(lib->comm);
+	Thread_join(lib->thConnect);
+	Thread_join(lib->thReceive);
+	CommPort_free(lib->comm);
+	lib->comm = NULL;
+#ifdef DEBUGLIB
+	printf("Device disconnected\n");
+#endif
 	Event_post(lib->evCancel);
+	Event_post(lib->evConnect);
 }
 
 LIBEXPORT void LIBCALL PesoLib_libera(PesoLib * lib)
 {
 	PesoLib_cancela(lib);
-	Event_free(lib->evCancel);
-	Event_free(lib->evReceive);
-	Event_free(lib->evConnect);
+	Thread_join(lib->thAlive);
 	Thread_join(lib->thReceive);
-	Thread_free(lib->thReceive);
 	Thread_join(lib->thConnect);
+	Thread_free(lib->thAlive);
+	Thread_free(lib->thReceive);
 	Thread_free(lib->thConnect);
-	if(lib->comm != NULL)
-		CommPort_free(lib->comm);
+	Event_free(lib->evCancel);
+	Event_free(lib->evConnect);
+	Event_free(lib->evReceive);
+	Event_free(lib->evDetected);
 	StringBuilder_free(lib->config);
 	Mutex_free(lib->writeMutex);
-	Mutex_free(lib->mutex);
 	free(lib);
 }
 
@@ -691,27 +659,6 @@ int PesoLib_inicializa()
 {
 	if(gDevMan != NULL)
 		return 1;
-#ifdef DEBUGLIB
-	printf("testing string builder\n");
-	StringBuilder* builder = StringBuilder_create();
-	StringBuilder_append(builder, "Olá Mundo!");
-	StringBuilder_append(builder, "\n");
-	StringBuilder_getData(builder);
-	int i;
-	for(i = 0; i < 10000; i++)
-		StringBuilder_append(builder, "Composes a string with the same text that would be printed if format was used on printf, but using the elements in the variable argument list identified by arg instead of additional function arguments and storing the resulting content as a C string in the buffer pointed by s (taking n as the maximum buffer capacity to fill).");
-	StringBuilder_getData(builder);
-	StringBuilder_append(builder, "\n");
-	StringBuilder_clear(builder);
-	StringBuilder_append(builder, "Composes a string with the same text that would be printed if format was used on printf, but using the elements in the variable argument list identified by arg instead of additional function arguments and storing the resulting content as a C string in the buffer pointed by s (taking n as the maximum buffer capacity to fill).");
-	StringBuilder_append(builder, "\n");
-	StringBuilder_getData(builder);
-	for(i = 0; i < 10000; i++)
-		StringBuilder_appendFormat(builder, "%d %.2f %s %c %p\n", 256, 1.5f, "String", 'C', builder);
-	StringBuilder_getData(builder);
-	StringBuilder_free(builder);
-	printf("library initialized\n");
-#endif
 	gDevMan = DeviceManager_create();
 	return 1;
 }

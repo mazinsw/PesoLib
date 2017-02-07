@@ -63,6 +63,12 @@ typedef struct CommSettings
 	CommFlow flow;
 } CommSettings;
 
+typedef struct CommInfo
+{
+	char port[8];
+	CommSettings settings;
+} CommInfo;
+
 CommPort* CommPort_create(const char* port);
 CommPort* CommPort_createEx(const char* port, const CommSettings* settings);
 int CommPort_configure(CommPort* comm, const CommSettings* settings);

@@ -1,0 +1,16 @@
+Envia:
+0x05 - Enquiry, Pergunta
+
+Recebe:
+0x02 - Inicio do texto
+00000 - Peso em gramas
+0x03 - Fim do texto
+
+exemplo:
+send(COM1, );
+recv(COM1) => 01250
+
+Ajustando o preço do quilo:
+0x02 - Inicio do texto
+000000 - preço do quilo
+0x03 - Fim do texto

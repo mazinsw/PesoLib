@@ -30,6 +30,10 @@
 
 typedef int (*DeviceInitFunc)(Device *);
 typedef int (*DeviceExecuteFunc)(Device *, const unsigned char*, int);
+typedef int (*DeviceIsStableFunc)(Device * dev);
+typedef int (*DeviceGetWeightFunc)(Device * dev);
+typedef void (*DeviceGetResponseRangeFunc)(Device * dev, int * min, int * max);
+typedef const char* (*DeviceGetNameFunc)(Device * dev);
 typedef const char* (*DeviceGetPropertyFunc)(Device *, const char*);
 typedef int (*DeviceMakeCmdFunc)(Device *, const char*, const char*, 
 	unsigned char*, int);
@@ -39,7 +43,10 @@ struct Device
 {
 	DeviceInitFunc init;
 	DeviceExecuteFunc execute;
-	DeviceExecuteFunc test;
+	DeviceIsStableFunc isStable;
+	DeviceGetWeightFunc getWeight;
+	DeviceGetResponseRangeFunc getResponseRange;
+	DeviceGetNameFunc getName;
 	DeviceGetPropertyFunc getProperty;
 	DeviceMakeCmdFunc makeCmd;
 	DeviceFreeFunc free;

@@ -6,16 +6,18 @@
 
 typedef struct Magna
 {
-	int peso;
+	int stable;
+	int weight;
 	char models[48];
 	char buffer[16];
 } Magna;
 
-
 int Magna_init(Device* _dev)
 {
 	Magna* dev = (Magna*)_dev->data;
-	dev->peso = 0;
+	dev->stable = 0;
+	dev->weight = 0;
+	strcpy(dev->buffer, "Magna");
 	strcpy(dev->models, ""); // TODO: add models
 	return 1;
 }
@@ -46,7 +48,7 @@ static int _Magna_execute_kg(const unsigned char* buffer, int size,
 		mult *= 10;
 	}
 	*peso = _peso;
-	*stable = 1;
+	*stable = _peso > 0;
 	return 17;
 }
 
@@ -77,57 +79,49 @@ static int _Magna_execute_stx(const unsigned char* buffer, int size,
 		mult *= 10;
 	}
 	*peso = _peso;
-	*stable = 1;
+	*stable = _peso > 0;
 	return 7;
-}
-
-static int _Magna_execute(const unsigned char* buffer, int size,
-	int * peso, int * stable)
-{
-	int r = _Magna_execute_kg(buffer, size, peso, stable);
-	if(r != 0)
-		return r;
-	return _Magna_execute_stx(buffer, size, peso, stable);
 }
 
 int Magna_execute(Device* _dev, const unsigned char* buffer, int size)
 {
 	Magna* dev = (Magna*)_dev->data;
-	int peso, stable = 0;
-	int used = _Magna_execute(buffer, size, &peso, &stable);
-	if(used == 0 || stable != 1)
-		return 0;
-	dev->peso = peso;
-	return used;
+	int r = _Magna_execute_kg(buffer, size, &dev->weight, &dev->stable);
+	if(r != 0)
+		return r;
+	return _Magna_execute_stx(buffer, size, &dev->weight, &dev->stable);
 }
 
-int Magna_test(Device* _dev, const unsigned char* buffer, int size)
+int Magna_isStable(Device * _dev)
 {
-	int peso, stable;
-	return _Magna_execute(buffer, size, &peso, &stable);
+	Magna* dev = (Magna*)_dev->data;
+	return dev->stable;
+}
+
+int Magna_getWeight(Device * _dev)
+{
+	Magna* dev = (Magna*)_dev->data;
+	return dev->weight;
+}
+
+void Magna_getResponseRange(Device * _dev, int * min, int * max)
+{
+	*min = 7;
+	*max = 17;
+}
+
+const char* Magna_getName(Device * _dev)
+{
+	Magna* dev = (Magna*)_dev->data;
+	return dev->buffer;
 }
 
 const char* Magna_getProperty(Device* _dev, const char* key)
 {
 	Magna* dev = (Magna*)_dev->data;
-	if(strcmp("weight", key) == 0)
-	{
-		sprintf(dev->buffer, "%d", dev->peso);
-		return dev->buffer;
-	}
-	if(strcmp("name", key) == 0)
-	{
-		strcpy(dev->buffer, "Magna");
-		return dev->buffer;
-	}
-	if(strcmp("models", key) == 0)
+	if(strcmp(DEV_PROP_MODELS, key) == 0)
 	{
 		return dev->models;
-	}
-	if(strcmp("response_size", key) == 0)
-	{
-		static const char * rsize = "17";
-		return rsize;
 	}
 	return NULL;
 }
@@ -136,7 +130,7 @@ int Magna_makeCmd(Device* _dev, const char* func, const char * data,
 	unsigned char* cmdOut, int bufLen)
 {
 	//Magna* dev = (Magna*)_dev;
-	if(strcmp("getweight", func) == 0)
+	if(strcmp(DEV_CMD_GET_WEIGHT, func) == 0)
 	{
 		const unsigned char cmd[] = { 'P' };
 		int bWritten = bufLen;
@@ -145,7 +139,7 @@ int Magna_makeCmd(Device* _dev, const char* func, const char * data,
 		memcpy(cmdOut, cmd, bWritten);
 		return bWritten;
 	}
-	if(strcmp("setprice", func) == 0)
+	if(strcmp(DEV_CMD_SET_PRICE, func) == 0)
 	{
 		return 0; // not supported
 	}
@@ -165,7 +159,10 @@ Device * Device_createMagna()
 	Device* dev = Device_alloc(_dev);
 	dev->init = Magna_init;
 	dev->execute = Magna_execute;
-	dev->test = Magna_test;
+	dev->isStable = Magna_isStable;
+	dev->getWeight = Magna_getWeight;
+	dev->getResponseRange = Magna_getResponseRange;
+	dev->getName = Magna_getName;
 	dev->getProperty = Magna_getProperty;
 	dev->makeCmd = Magna_makeCmd;
 	dev->free = Magna_free;

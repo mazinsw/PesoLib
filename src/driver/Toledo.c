@@ -6,16 +6,18 @@
 
 typedef struct Toledo
 {
-	int peso;
+	int stable;
+	int weight;
 	char models[48];
 	char buffer[16];
 } Toledo;
 
-
 int Toledo_init(Device* _dev)
 {
 	Toledo* dev = (Toledo*)_dev->data;
-	dev->peso = 0;
+	dev->stable = 0;
+	dev->weight = 0;
+	strcpy(dev->buffer, "Toledo");
 	strcpy(dev->models, ""); // TODO: add models
 	return 1;
 }
@@ -35,7 +37,7 @@ static int _Toledo_execute_live(const unsigned char* buffer, int size,
 		if(i == 1 && buffer[i] == '-')
 		{
 			*stable = 0;
-			return 7;
+			return 8;
 		}
 		if(buffer[i] < '0' || buffer[i] > '9')
 			return 0;
@@ -43,8 +45,8 @@ static int _Toledo_execute_live(const unsigned char* buffer, int size,
 		mult *= 10;
 	}
 	*peso = _peso;
-	*stable = 1;
-	return 7;
+	*stable = _peso > 0;
+	return 8;
 }
 
 static int _Toledo_execute_normal(const unsigned char* buffer, int size,
@@ -81,58 +83,49 @@ static int _Toledo_execute_normal(const unsigned char* buffer, int size,
 		mult *= 10;
 	}
 	*peso = _peso;
-	*stable = 1;
+	*stable = _peso > 0;
 	return 7;
-}
-
-static int _Toledo_execute(const unsigned char* buffer, int size,
-	int * peso, int * stable)
-{
-	int r = _Toledo_execute_normal(buffer, size, peso, stable);
-	if(r != 0)
-		return r;
-	return _Toledo_execute_live(buffer, size, peso, stable);
-	
 }
 
 int Toledo_execute(Device* _dev, const unsigned char* buffer, int size)
 {
 	Toledo* dev = (Toledo*)_dev->data;
-	int peso, stable = 0;
-	int used = _Toledo_execute(buffer, size, &peso, &stable);
-	if(used == 0 || stable != 1)
-		return 0;
-	dev->peso = peso;
-	return used;
+	int r = _Toledo_execute_normal(buffer, size, &dev->weight, &dev->stable);
+	if(r != 0)
+		return r;
+	return _Toledo_execute_live(buffer, size, &dev->weight, &dev->stable);
 }
 
-int Toledo_test(Device* _dev, const unsigned char* buffer, int size)
+int Toledo_isStable(Device * _dev)
 {
-	int peso, stable;
-	return _Toledo_execute(buffer, size, &peso, &stable);
+	Toledo* dev = (Toledo*)_dev->data;
+	return dev->stable;
+}
+
+int Toledo_getWeight(Device * _dev)
+{
+	Toledo* dev = (Toledo*)_dev->data;
+	return dev->weight;
+}
+
+void Toledo_getResponseRange(Device * _dev, int * min, int * max)
+{
+	*min = 7;
+	*max = 8;
+}
+
+const char* Toledo_getName(Device * _dev)
+{
+	Toledo* dev = (Toledo*)_dev->data;
+	return dev->buffer;
 }
 
 const char* Toledo_getProperty(Device* _dev, const char* key)
 {
 	Toledo* dev = (Toledo*)_dev->data;
-	if(strcmp("weight", key) == 0)
-	{
-		sprintf(dev->buffer, "%d", dev->peso);
-		return dev->buffer;
-	}
-	if(strcmp("name", key) == 0)
-	{
-		strcpy(dev->buffer, "Toledo");
-		return dev->buffer;
-	}
-	if(strcmp("models", key) == 0)
+	if(strcmp(DEV_PROP_MODELS, key) == 0)
 	{
 		return dev->models;
-	}
-	if(strcmp("response_size", key) == 0)
-	{
-		static const char * rsize = "8";
-		return rsize;
 	}
 	return NULL;
 }
@@ -141,7 +134,7 @@ int Toledo_makeCmd(Device* _dev, const char* func, const char * data,
 	unsigned char* cmdOut, int bufLen)
 {
 	//Toledo* dev = (Toledo*)_dev;
-	if(strcmp("getweight", func) == 0)
+	if(strcmp(DEV_CMD_GET_WEIGHT, func) == 0)
 	{
 		const unsigned char cmd[] = { 0x05 };
 		int bWritten = bufLen;
@@ -150,7 +143,7 @@ int Toledo_makeCmd(Device* _dev, const char* func, const char * data,
 		memcpy(cmdOut, cmd, bWritten);
 		return bWritten;
 	}
-	if(strcmp("setprice", func) == 0)
+	if(strcmp(DEV_CMD_SET_PRICE, func) == 0)
 	{
 		if(data == NULL)
 			return 0;
@@ -197,7 +190,10 @@ Device * Device_createToledo()
 	Device * dev = Device_alloc(_dev);
 	dev->init = Toledo_init;
 	dev->execute = Toledo_execute;
-	dev->test = Toledo_test;
+	dev->isStable = Toledo_isStable;
+	dev->getWeight = Toledo_getWeight;
+	dev->getResponseRange = Toledo_getResponseRange;
+	dev->getName = Toledo_getName;
 	dev->getProperty = Toledo_getProperty;
 	dev->makeCmd = Toledo_makeCmd;
 	dev->free = Toledo_free;

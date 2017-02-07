@@ -4,6 +4,7 @@
 #include "Alfa.h"
 #include "Magna.h"
 #include "Urano.h"
+#include "Elgin.h"
 #include "StringBuilder.h"
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +31,7 @@ DeviceManager* DeviceManager_create()
 	DeviceManager_addDevice(devman, Device_createToledo());
 	DeviceManager_addDevice(devman, Device_createFilizola());
 	DeviceManager_addDevice(devman, Device_createUrano());
+	DeviceManager_addDevice(devman, Device_createElgin());
 	DeviceManager_addDevice(devman, Device_createAlfa());
 	DeviceManager_addDevice(devman, Device_createMagna());
 	
@@ -40,7 +42,7 @@ DeviceManager* DeviceManager_create()
 		Device * dev = DeviceManager_getDevice(devman, i);
 		if(i > 0)
 			StringBuilder_append(devman->names, "\r\n");
-		StringBuilder_append(devman->names, Device_getProperty(dev, "name"));
+		StringBuilder_append(devman->names, Device_getName(dev));
 	}
 	return devman;
 }
@@ -57,9 +59,9 @@ const char* DeviceManager_getModels(DeviceManager* devman, const char * deviceNa
 	for(i = 0; i < devman->count; i++)
 	{
 		Device * dev = DeviceManager_getDevice(devman, i);
-		if(strcmp(deviceName, Device_getProperty(dev, "name")) != 0)
+		if(strcmp(deviceName, Device_getName(dev)) != 0)
 			continue;
-		StringBuilder_append(devman->models, Device_getProperty(dev, "models"));
+		StringBuilder_append(devman->models, Device_getProperty(dev, DEV_PROP_MODELS));
 		break;
 	}
 	return StringBuilder_getData(devman->models);

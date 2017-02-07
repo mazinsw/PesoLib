@@ -1,3 +1,8 @@
+2.0.0.0
+Melhorado identificação de dispositivo, adicionado protocolo Urano Pop
+Adicionado driver de balança Elgin
+Agora peso nulo é considerado instável e não é enviado
+
 1.1.0.0
 Corrigido ajuste de velocidade que estava sem efeito
 Implementado detecção de velocidade da porta de comunicação

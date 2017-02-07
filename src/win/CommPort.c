@@ -9,8 +9,7 @@ struct CommPort
 {
 	HANDLE hFile;
 	Event* cancel;
-	char port[8];
-	CommSettings settings;
+	CommInfo info;
 };
 
 CommPort* CommPort_create(const char* port)
@@ -49,7 +48,7 @@ CommPort* CommPort_createEx(const char* port, const CommSettings* settings)
 	CommPort* comm = (CommPort*)malloc(sizeof(CommPort));
 	comm->hFile = hFile;
 	comm->cancel = Event_createEx(FALSE, FALSE);
-	strcpy(comm->port, port);
+	strcpy(comm->info.port, port);
 	CommPort_configure(comm, settings);
 	return comm;
 }
@@ -124,11 +123,11 @@ int CommPort_configure(CommPort* comm, const CommSettings* settings)
 #endif
 		return 0;
 	}
-	comm->settings.baund = settings->baund;
-	comm->settings.data = settings->data;
-	comm->settings.stop = settings->stop;
-	comm->settings.parity = settings->parity;
-	comm->settings.flow = settings->flow;
+	comm->info.settings.baund = settings->baund;
+	comm->info.settings.data = settings->data;
+	comm->info.settings.stop = settings->stop;
+	comm->info.settings.parity = settings->parity;
+	comm->info.settings.flow = settings->flow;
 	return 1;
 }
 
@@ -315,8 +314,6 @@ int CommPort_waitEx(CommPort* comm, int* bytesAvailable, int milliseconds)
 	OVERLAPPED ovl;
 	Event * evReceive;
 
-	*bytesAvailable = 255;
-	return 1; // skip waitEx, with CommMask disabled
 	evReceive = Event_createEx(TRUE, FALSE);
 	memset(&ovl, 0, sizeof(OVERLAPPED));
 	ovl.hEvent = (HANDLE)Event_getHandle(evReceive);
@@ -349,8 +346,13 @@ int CommPort_readEx(CommPort* comm, unsigned char* bytes, int count, int millise
 	BOOL success = ReadFile(comm->hFile, (PVOID)bytes, count, NULL, &ovl);
 	success = _CommPort_check(comm, evReceive, &ovl, success, &bytesTrans, milliseconds);
 	Event_free(evReceive);
-	if(!success)
+	if(!success || bytesTrans == (DWORD)-1)
 		return 0;
+#ifdef DEBUGLIB
+	if(bytesTrans > count) {
+		printf("CommPort_readEx[ReadCountError]: Trying to read %d bytes, but %li read instead\n", 
+			count, bytesTrans);
+	}#endif
 	return bytesTrans;
 }
 
@@ -362,10 +364,6 @@ void CommPort_cancel(CommPort* comm)
 void CommPort_free(CommPort* comm)
 {
 	CommPort_cancel(comm);
-	// Thread_wait(0);
-	// PurgeComm(comm->hFile, PURGE_TXABORT | PURGE_RXABORT);
-	// SetCommMask(comm->hFile, 0);
-	// PurgeComm(comm->hFile, PURGE_TXCLEAR | PURGE_RXCLEAR);
 	Event_free(comm->cancel);
 	CloseHandle(comm->hFile);
 	free(comm);

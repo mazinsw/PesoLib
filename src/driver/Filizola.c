@@ -6,16 +6,18 @@
 
 typedef struct Filizola
 {
-	int peso;
+	int stable;
+	int weight;
 	char models[48];
 	char buffer[16];
 } Filizola;
 
-
 int Filizola_init(Device* _dev)
 {
 	Filizola* dev = (Filizola*)_dev->data;
-	dev->peso = 0;
+	dev->stable = 0;
+	dev->weight = 0;
+	strcpy(dev->buffer, "Filizola");
 	strcpy(dev->models, ""); // TODO: add models
 	return 1;
 }
@@ -54,48 +56,46 @@ static int _Filizola_execute(const unsigned char* buffer, int size,
 		mult *= 10;
 	}
 	*peso = _peso;
-	*stable = 1;
+	*stable = _peso > 0;
 	return 7;
 }
 
 int Filizola_execute(Device* _dev, const unsigned char* buffer, int size)
 {
 	Filizola* dev = (Filizola*)_dev->data;
-	int peso, stable = 0;
-	int used = _Filizola_execute(buffer, size, &peso, &stable);
-	if(used == 0 || stable != 1)
-		return 0;
-	dev->peso = peso;
-	return used;
+	return _Filizola_execute(buffer, size, &dev->weight, &dev->stable);
 }
 
-int Filizola_test(Device* _dev, const unsigned char* buffer, int size)
+int Filizola_isStable(Device * _dev)
 {
-	int peso, stable;
-	return _Filizola_execute(buffer, size, &peso, &stable);
+	Filizola* dev = (Filizola*)_dev->data;
+	return dev->stable;
+}
+
+int Filizola_getWeight(Device * _dev)
+{
+	Filizola* dev = (Filizola*)_dev->data;
+	return dev->weight;
+}
+
+void Filizola_getResponseRange(Device * _dev, int * min, int * max)
+{
+	*min = 7;
+	*max = 7;
+}
+
+const char* Filizola_getName(Device * _dev)
+{
+	Filizola* dev = (Filizola*)_dev->data;
+	return dev->buffer;
 }
 
 const char* Filizola_getProperty(Device* _dev, const char* key)
 {
 	Filizola* dev = (Filizola*)_dev->data;
-	if(strcmp("weight", key) == 0)
-	{
-		sprintf(dev->buffer, "%d", dev->peso);
-		return dev->buffer;
-	}
-	if(strcmp("name", key) == 0)
-	{
-		strcpy(dev->buffer, "Filizola");
-		return dev->buffer;
-	}
-	if(strcmp("models", key) == 0)
+	if(strcmp(DEV_PROP_MODELS, key) == 0)
 	{
 		return dev->models;
-	}
-	if(strcmp("response_size", key) == 0)
-	{
-		static const char * rsize = "7";
-		return rsize;
 	}
 	return NULL;
 }
@@ -104,7 +104,7 @@ int Filizola_makeCmd(Device* _dev, const char* func, const char * data,
 	unsigned char* cmdOut, int bufLen)
 {
 	//Filizola* dev = (Filizola*)_dev;
-	if(strcmp("getweight", func) == 0)
+	if(strcmp(DEV_CMD_GET_WEIGHT, func) == 0)
 	{
 		const unsigned char cmd[] = { 0x05 };
 		int bWritten = bufLen;
@@ -113,7 +113,7 @@ int Filizola_makeCmd(Device* _dev, const char* func, const char * data,
 		memcpy(cmdOut, cmd, bWritten);
 		return bWritten;
 	}
-	if(strcmp("setprice", func) == 0)
+	if(strcmp(DEV_CMD_SET_PRICE, func) == 0)
 	{
 		return 0; // not supported
 	}
@@ -133,7 +133,10 @@ Device * Device_createFilizola()
 	Device* dev = Device_alloc(_dev);
 	dev->init = Filizola_init;
 	dev->execute = Filizola_execute;
-	dev->test = Filizola_test;
+	dev->isStable = Filizola_isStable;
+	dev->getWeight = Filizola_getWeight;
+	dev->getResponseRange = Filizola_getResponseRange;
+	dev->getName = Filizola_getName;
 	dev->getProperty = Filizola_getProperty;
 	dev->makeCmd = Filizola_makeCmd;
 	dev->free = Filizola_free;

@@ -27,11 +27,19 @@
 #ifndef _DEVICE_H_
 #define _DEVICE_H_
 
+#define DEV_PROP_MODELS "models"
+
+#define DEV_CMD_GET_WEIGHT "getweight"
+#define DEV_CMD_SET_PRICE "setprice"
+
 typedef struct Device Device;
 
 int Device_init(Device * dev);
 int Device_execute(Device * dev, const unsigned char* buffer, int size);
-int Device_test(Device * dev, const unsigned char* buffer, int size);
+int Device_isStable(Device * dev);
+int Device_getWeight(Device * dev);
+void Device_getResponseRange(Device * dev, int * min, int * max);
+const char* Device_getName(Device * dev);
 const char* Device_getProperty(Device * dev, const char* key);
 int Device_makeCmd(Device * dev, const char* func, const char * data, 
 	unsigned char* cmdOut, int bufLen);

@@ -24,9 +24,24 @@ int Device_execute(Device* dev, const unsigned char* buffer, int size)
 	return dev->execute(dev, buffer, size);
 }
 
-int Device_test(Device * dev, const unsigned char* buffer, int size)
+int Device_isStable(Device * dev)
 {
-	return dev->test(dev, buffer, size);
+	return dev->isStable(dev);
+}
+
+int Device_getWeight(Device * dev)
+{
+	return dev->getWeight(dev);
+}
+
+void Device_getResponseRange(Device * dev, int * min, int * max)
+{
+	return dev->getResponseRange(dev, min, max);
+}
+
+const char* Device_getName(Device * dev)
+{
+	return dev->getName(dev);
 }
 
 const char* Device_getProperty(Device* dev, const char* key)

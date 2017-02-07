@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Layout>
+	<Files>
+		<File Name="..\src\PesoLib.c" Top="Yes" Tabpos="1" TopLine="232">
+			<Cursor Line="251" Column="23"/>
+		</File>
+	</Files>
 	<Folders>
 		<Folder Name=".." Expanded="Yes"/>
 		<Folder Name="..\include" Expanded="Yes"/>

@@ -6,16 +6,18 @@
 
 typedef struct Alfa
 {
-	int peso;
+	int stable;
+	int weight;
 	char models[48];
 	char buffer[24];
 } Alfa;
 
-
 int Alfa_init(Device* _dev)
 {
 	Alfa* dev = (Alfa*)_dev->data;
-	dev->peso = 0;
+	dev->stable = 0;
+	dev->weight = 0;
+	strcpy(dev->buffer, "Alfa");
 	strcpy(dev->models, "3101C"); // TODO: add models
 	return 1;
 }
@@ -52,48 +54,46 @@ static int _Alfa_execute(const unsigned char* buffer, int size,
 		mult *= 10;
 	}
 	*peso = _peso;
-	*stable = 1;
+	*stable = _peso > 0;
 	return 22;
 }
 
 int Alfa_execute(Device* _dev, const unsigned char* buffer, int size)
 {
 	Alfa* dev = (Alfa*)_dev->data;
-	int peso, stable = 0;
-	int used = _Alfa_execute(buffer, size, &peso, &stable);
-	if(used == 0 || stable != 1)
-		return 0;
-	dev->peso = peso;
-	return used;
+	return _Alfa_execute(buffer, size, &dev->weight, &dev->stable);
 }
 
-int Alfa_test(Device* _dev, const unsigned char* buffer, int size)
+int Alfa_isStable(Device * _dev)
 {
-	int peso, stable;
-	return _Alfa_execute(buffer, size, &peso, &stable);
+	Alfa* dev = (Alfa*)_dev->data;
+	return dev->stable;
+}
+
+int Alfa_getWeight(Device * _dev)
+{
+	Alfa* dev = (Alfa*)_dev->data;
+	return dev->weight;
+}
+
+void Alfa_getResponseRange(Device * _dev, int * min, int * max)
+{
+	*min = 22;
+	*max = 22;
+}
+
+const char* Alfa_getName(Device * _dev)
+{
+	Alfa* dev = (Alfa*)_dev->data;
+	return dev->buffer;
 }
 
 const char* Alfa_getProperty(Device* _dev, const char* key)
 {
 	Alfa* dev = (Alfa*)_dev->data;
-	if(strcmp("weight", key) == 0)
-	{
-		sprintf(dev->buffer, "%d", dev->peso);
-		return dev->buffer;
-	}
-	if(strcmp("name", key) == 0)
-	{
-		strcpy(dev->buffer, "Alfa");
-		return dev->buffer;
-	}
-	if(strcmp("models", key) == 0)
+	if(strcmp(DEV_PROP_MODELS, key) == 0)
 	{
 		return dev->models;
-	}
-	if(strcmp("response_size", key) == 0)
-	{
-		static const char * rsize = "22";
-		return rsize;
 	}
 	return NULL;
 }
@@ -102,7 +102,7 @@ int Alfa_makeCmd(Device* _dev, const char* func, const char * data,
 				  unsigned char* cmdOut, int bufLen)
 {
 	//Alfa* dev = (Alfa*)_dev;
-	if(strcmp("getweight", func) == 0)
+	if(strcmp(DEV_CMD_GET_WEIGHT, func) == 0)
 	{
 		const unsigned char cmd[] = { '0', '1', 'P', 0x13, 0x10 };
 		int bWritten = bufLen;
@@ -111,7 +111,7 @@ int Alfa_makeCmd(Device* _dev, const char* func, const char * data,
 		memcpy(cmdOut, cmd, bWritten);
 		return bWritten;
 	}
-	if(strcmp("setprice", func) == 0)
+	if(strcmp(DEV_CMD_SET_PRICE, func) == 0)
 	{
 		return 0; // not supported
 	}
@@ -131,7 +131,10 @@ Device * Device_createAlfa()
 	Device* dev = Device_alloc(_dev);
 	dev->init = Alfa_init;
 	dev->execute = Alfa_execute;
-	dev->test = Alfa_test;
+	dev->isStable = Alfa_isStable;
+	dev->getWeight = Alfa_getWeight;
+	dev->getResponseRange = Alfa_getResponseRange;
+	dev->getName = Alfa_getName;
 	dev->getProperty = Alfa_getProperty;
 	dev->makeCmd = Alfa_makeCmd;
 	dev->free = Alfa_free;
