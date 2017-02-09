@@ -10,9 +10,15 @@
 #include "DeviceManager.h"
 #include "StringBuilder.h"
 #include "Mutex.h"
+
 #define PROPERY_BUFFER_SIZE 256
 #define BUFFER_SIZE 256
 #define CMD_SIZE 16
+
+#ifndef DEBUGLIB
+//#define DEBUGLIB
+#endif
+
 static DeviceManager * gDevMan = NULL;
 static const char gVersion[] = "1.2.0.0";
 static const int REPEAT_BAUND = 19200;
@@ -21,6 +27,7 @@ static const int baundValues[] = {9600, 2400, 4800, 19200, 14400, 38400, 57600, 
 struct PesoLib
 {
 	int canceled;
+	int connected;
 	int abandoned;
 	int testing;
 	Thread* thConnect;
@@ -47,11 +54,42 @@ struct PesoLib
 
 static int _PesoLib_echoTest(PesoLib * lib);
 
+static void _PesoLib_disconnect(PesoLib * lib)
+{
+#ifdef DEBUGLIB
+	printf("Disconnecting device\n");
+#endif
+	lib->abandoned = 1;
+	if(lib->comm != NULL)
+		CommPort_cancel(lib->comm);
+	Thread_join(lib->thReceive);
+	if(lib->comm != NULL)
+		CommPort_free(lib->comm);
+	lib->comm = NULL;
+	lib->abandoned = 0;
+	lib->connected = 0;
+#ifdef DEBUGLIB
+	printf("Device disconnected\n");
+#endif
+}
+
+static void _PesoLib_cancel(PesoLib * lib)
+{
+#ifdef DEBUGLIB
+	printf("Canceling connection\n");
+#endif
+	_PesoLib_disconnect(lib);
+	if(lib->canceled)
+		Event_post(lib->evCancel);
+	Event_post(lib->evConnect);
+#ifdef DEBUGLIB
+	printf("Connection canceled\n");
+#endif
+}
+
 static void _PesoLib_reconnect(PesoLib * lib)
 {
-	PesoLib_cancela(lib);
-	if (lib->canceled)
-		return;
+	_PesoLib_cancel(lib);
 	Thread_start(lib->thConnect); // try connect again
 }
 
@@ -136,7 +174,7 @@ static void _PesoLib_receiveFunc(void* data)
 	int buffer_size;
 	int remaining, consumed, unused, used;
 
-	while(lib->canceled == 0 && lib->abandoned == 0)
+	while(!lib->canceled && !lib->abandoned)
 	{
 #ifdef DEBUGLIB
 	printf("Waiting for receive event\n");
@@ -146,9 +184,9 @@ static void _PesoLib_receiveFunc(void* data)
 		printf("Bytes received: %d\n", buffer_size);
 #endif
 		buffer_size = buffer_size < BUFFER_SIZE?buffer_size:BUFFER_SIZE;
-		if(lib->canceled == 1 || lib->abandoned == 1)
+		if(lib->canceled || lib->abandoned)
 			continue;
-		if(buffer_size == 0 && lib->testing == 0)
+		if(buffer_size == 0 && !lib->testing)
 		{
 			Thread_start(lib->thAlive);
 			continue;
@@ -207,6 +245,8 @@ static int _PesoLib_echoTest(PesoLib * lib)
 	lib->testing = 1;
 	for(i = 0; i < count; i++)
 	{
+		if(lib->canceled || lib->abandoned)
+			break;
 		index = i;
 		if(i == 0 && dev_index >= 0)
 			index = dev_index;
@@ -252,7 +292,13 @@ static void _PesoLib_connectFunc(void* data)
 #ifdef DEBUGLIB
 	printf("Starting connection\n");
 #endif
-	lib->canceled = 0;
+	if(lib->canceled || lib->abandoned) 
+	{
+#ifdef DEBUGLIB
+	printf("Connection aborted\n");
+#endif
+		return;
+	}
 	count = 0;
 	need = CommPort_enum(NULL, 0);
 	if(lib->port[0] != 0)
@@ -271,7 +317,7 @@ static void _PesoLib_connectFunc(void* data)
 	printf("Searching port... %d found\n", count);
 #endif
 	tried = 1;
-	while(lib->canceled == 0)
+	while(!lib->canceled && !lib->abandoned)
 	{
 		// try connect to one port
 		comm = NULL;
@@ -289,22 +335,20 @@ static void _PesoLib_connectFunc(void* data)
 				Thread_start(lib->thReceive);
 				if(_PesoLib_echoTest(lib))
 					break;
-				lib->abandoned = 1;
-				CommPort_cancel(lib->comm);
-				Thread_join(lib->thReceive);
-				CommPort_free(comm);
-				lib->abandoned = 0;
+				_PesoLib_disconnect(lib);
 				comm = NULL;
 			}
-			if(lib->canceled == 1)
+			if(lib->canceled || lib->abandoned)
 				break;
 			port += strlen(port) + 1;
 		}
 		if(comm != NULL)
 		{
 #ifdef DEBUGLIB
-			printf("%s connected\n", port);
+			Device * dev = DeviceManager_getDevice(gDevMan, lib->deviceIndex);
+			printf("Device %s connected using %s\n", Device_getName(dev), port);
 #endif
+			lib->connected = 1;
 			strcpy(lib->port, port);
 			Event_post(lib->evConnect);
 			break;
@@ -312,7 +356,7 @@ static void _PesoLib_connectFunc(void* data)
 #ifdef DEBUGLIB
 		printf("No port available, trying again\n");
 #endif
-		if(lib->canceled == 1)
+		if(lib->canceled || lib->abandoned)
 			break;
 		// not port available, wait few seconds and try again
 		Thread_wait(lib->retryTimeout);
@@ -359,14 +403,15 @@ static int _PesoLib_getProperty(const char * lwconfig, const char * config,
 LIBEXPORT PesoLib * LIBCALL PesoLib_cria(const char* config)
 {
 	PesoLib * lib = (PesoLib*)malloc(sizeof(PesoLib));
+	lib->connected = 0;
 	lib->testing = 0;
 	lib->abandoned = 0;
+	lib->canceled = 0;
 	lib->baundIndex = 0;
 	lib->writeMutex = Mutex_create();
 	lib->price = 0.0f;
 	lib->weight = 0;
 	lib->stable = 0;
-	lib->canceled = 0;
 	lib->evCancel = Event_create();
 	lib->evConnect = Event_createEx(0, 0);
 	lib->evDetected = Event_createEx(0, 0);
@@ -393,7 +438,7 @@ LIBEXPORT PesoLib * LIBCALL PesoLib_cria(const char* config)
 
 LIBEXPORT int LIBCALL PesoLib_isConectado(PesoLib * lib)
 {
-	return lib->comm != NULL;
+	return lib->connected;
 }
 
 LIBEXPORT void LIBCALL PesoLib_setConfiguracao(PesoLib * lib, const char * config)
@@ -477,7 +522,7 @@ LIBEXPORT void LIBCALL PesoLib_setConfiguracao(PesoLib * lib, const char * confi
 			lib->requestAliveInterval = tm;
 	}
 	free(lwconfig);
-	if(!PesoLib_isConectado(lib))
+	if(lib->comm == NULL)
 		return;
 	if(!portChanged && !commSettingsChanged)
 		return;
@@ -547,20 +592,31 @@ LIBEXPORT int LIBCALL PesoLib_aguardaEvento(PesoLib * lib)
 {
 	Event* events[3];
 #ifdef DEBUGLIB
-		printf("Waiting weight event\n");
+	printf("Waiting weight event\n");
 #endif
 	events[0] = lib->evCancel;
 	events[1] = lib->evConnect;
 	events[2] = lib->evReceive;
 	Event* object = Event_waitMultiple(events, 3);
 	if(object == lib->evCancel)
+	{
+#ifdef DEBUGLIB
+		printf("Event cancelled triggered\n");
+#endif
 		return Evento_Cancelado;
+	}
 	if(object == lib->evConnect)
 	{
+#ifdef DEBUGLIB
+		printf("Event connect triggered: IsConnected: %d\n", PesoLib_isConectado(lib));
+#endif
 		if(PesoLib_isConectado(lib))
 			return Evento_Conectado;
 		return Evento_Desconectado;
 	}
+#ifdef DEBUGLIB
+		printf("Event weight received\n");
+#endif
 	return Evento_PesoRecebido;
 }
 
@@ -589,7 +645,7 @@ LIBEXPORT int LIBCALL PesoLib_solicitaPeso(PesoLib * lib, float preco)
 	int price_size;
 	int bwritten = 0;
 	
-	if(!PesoLib_isConectado(lib) || lib->deviceIndex < 0)
+	if(lib->comm == NULL || lib->deviceIndex < 0)
 		return 0;
 #ifdef DEBUGLIB
 	printf("Requesting weight\n");
@@ -614,22 +670,10 @@ LIBEXPORT int LIBCALL PesoLib_solicitaPeso(PesoLib * lib, float preco)
 
 LIBEXPORT void LIBCALL PesoLib_cancela(PesoLib * lib)
 {
-#ifdef DEBUGLIB
-	printf("Disconnecting device\n");
-#endif
-	lib->canceled = 1;
-	if(!PesoLib_isConectado(lib))
+	if(lib->canceled)
 		return;
-	CommPort_cancel(lib->comm);
-	Thread_join(lib->thConnect);
-	Thread_join(lib->thReceive);
-	CommPort_free(lib->comm);
-	lib->comm = NULL;
-#ifdef DEBUGLIB
-	printf("Device disconnected\n");
-#endif
-	Event_post(lib->evCancel);
-	Event_post(lib->evConnect);
+	lib->canceled = 1;
+	_PesoLib_cancel(lib);
 }
 
 LIBEXPORT void LIBCALL PesoLib_libera(PesoLib * lib)

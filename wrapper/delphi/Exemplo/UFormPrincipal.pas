@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, Balanca, StdCtrls, XPMan;
+  Dialogs, Balanca, StdCtrls;
 
 type
   TForm1 = class(TForm)
@@ -17,7 +17,6 @@ type
     Button1: TButton;
     Label5: TLabel;
     Edit1: TEdit;
-    XPManifest1: TXPManifest;
     Label2: TLabel;
     LabelTotal: TLabel;
     procedure Balanca1Conectado(Sender: TObject);

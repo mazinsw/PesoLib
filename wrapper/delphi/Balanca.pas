@@ -3,7 +3,7 @@ unit Balanca;
 interface
 
 uses
-  Windows, SysUtils, Classes;
+  Windows, SysUtils, Classes, SyncObjs;
 
 const
   pesolib = 'PesoLib.dll';
@@ -28,10 +28,16 @@ type
 
   TBalancaWrapper = class
   private
+    FPeso: Integer;
     FModulo: THandle;
     FInstancia: TPesoLib;
     FMarcas: TStrings;
-    cs:  TRTLCriticalSection;
+    FCancelado: Boolean;
+    FThreadEvento: TThread;
+    FWaitEvent: TEvent;
+    FOnPesoRecebido: TPesoRecebidoEvent;
+    FOnConectado: TNotifyEvent;
+    FOnDesconectado: TNotifyEvent;
     FPesoLib_cria: TPesoLib_criaFunc;
     FPesoLib_isConectado: TPesoLib_isConectadoFunc;
     FPesoLib_setConfiguracao: TPesoLib_setConfiguracaoFunc;
@@ -45,6 +51,9 @@ type
     FPesoLib_cancela: TPesoLib_cancelaFunc;
     FPesoLib_libera: TPesoLib_liberaFunc; 
     FPesoLib_getVersao: TPesoLib_getVersaoFunc;
+    procedure DoPesoRecebido;
+    procedure DoConectado;
+    procedure DoDesconectado;
     function GetConectado: Boolean;
     function GetConfiguracao: string; 
     function GetVersao: string;
@@ -56,12 +65,17 @@ type
     procedure SetPreco(Preco: Currency);
     procedure GetModelos(const Marca: string; Lista: TStrings);
     function AguardaEvento: TPesoEvento;
+    procedure Start;
     procedure Cancela;
     property Conectado: Boolean read GetConectado;
     property Configuracao: string read GetConfiguracao write SetConfiguracao;
     property Marcas: TStrings read FMarcas;
     property Versao: string read GetVersao;
     property UltimoPeso: Integer read GetUltimoPeso;
+
+    property OnConectado: TNotifyEvent read FOnConectado write FOnConectado;
+    property OnDesconectado: TNotifyEvent read FOnDesconectado write FOnDesconectado;
+    property OnPesoRecebido: TPesoRecebidoEvent read FOnPesoRecebido write FOnPesoRecebido;
   end;
 
   TBalanca = class(TComponent)
@@ -69,18 +83,13 @@ type
     { Private declarations }
     FPeso: Integer;
     FPreco: Currency;
-    FCancelado: Boolean;
     FAtivo: Boolean;
     FWrapper: TBalancaWrapper;
     FConfiguracao: string;
     FOnPesoRecebido: TPesoRecebidoEvent;
     FOnConectado: TNotifyEvent;
     FOnDesconectado: TNotifyEvent;
-    FThreadEvento: TThread;
     FNomeDriver: string;
-    procedure DoPesoRecebido;
-    procedure DoConectado;
-    procedure DoDesconectado;
     procedure SetPreco(const Value: Currency);
     procedure RequerAtivo;
     procedure SetAtivo(const Value: Boolean);
@@ -90,6 +99,9 @@ type
     function GetVersao: string;
   protected
     { Protected declarations }
+    procedure DoPesoRecebido(Sender: TObject; Gramas: Integer);
+    procedure DoConectado(Sender: TObject);
+    procedure DoDesconectado(Sender: TObject);
   public
     { Public declarations }
     constructor Create(AOwner: TComponent); override;
@@ -112,11 +124,11 @@ type
 
   TThreadEvento = class(TThread)
   private
-    FBalanca: TBalanca;
+    FWrapper: TBalancaWrapper;
   protected
     procedure Execute; override;
   public
-    constructor Create(Balanca: TBalanca);
+    constructor Create(Wrapper: TBalancaWrapper);
   end;
 
 procedure Register;
@@ -145,6 +157,7 @@ constructor TBalanca.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   FNomeDriver := pesolib;
+  FAtivo := False;
   FWrapper := nil;
 end;
 
@@ -154,31 +167,30 @@ begin
   inherited;
 end;
 
-procedure TBalanca.DoConectado;
+procedure TBalanca.DoConectado(Sender: TObject);
 begin
   if Assigned(FOnConectado) then
     FOnConectado(Self);
 end;
 
-procedure TBalanca.DoDesconectado;
+procedure TBalanca.DoDesconectado(Sender: TObject);
 begin
   if Assigned(FOnDesconectado) then
     FOnDesconectado(Self);
 end;
 
-procedure TBalanca.DoPesoRecebido;
+procedure TBalanca.DoPesoRecebido(Sender: TObject; Gramas: Integer);
 begin
+  FPeso := Gramas;
   if Assigned(FOnPesoRecebido) then
-    FOnPesoRecebido(Self, FPeso);
+    FOnPesoRecebido(Self, Gramas);
 end;
 
 function TBalanca.GetConfiguracao: string;
 begin
+  Result := FConfiguracao;
   if not FAtivo then
-  begin
-    Result := FConfiguracao;
-    Exit; 
-  end;
+    Exit;
   Result := FWrapper.GetConfiguracao;
 end;
 
@@ -196,6 +208,7 @@ end;
 
 function TBalanca.GetVersao: string;
 begin
+  RequerAtivo;
   Result := FWrapper.GetVersao;
 end;
 
@@ -211,7 +224,6 @@ begin
     Exit;
   if not Value then
   begin
-    FCancelado := True;
     FWrapper.Free;
     FWrapper := nil;
     FAtivo := Value;
@@ -219,15 +231,16 @@ begin
   end;
   try
     FWrapper := TBalancaWrapper.Create(FNomeDriver, FConfiguracao);
-    FCancelado := False; 
+    FWrapper.OnConectado := DoConectado;
+    FWrapper.OnDesconectado := DoDesconectado;
+    FWrapper.OnPesoRecebido := DoPesoRecebido;
+    FWrapper.Start;
     FAtivo := Value;
-    FThreadEvento := TThreadEvento.Create(Self);
-    FThreadEvento.Start;
   except
     on E: Exception do
     begin
       FWrapper := nil;
-      raise E;
+      raise;
     end;
   end;
 end;
@@ -249,11 +262,10 @@ begin
   if FNomeDriver = Value then
     Exit;
   FNomeDriver := Value;
-  if Ativo then
-  begin
-    Ativo := False;
-    Ativo := True;
-  end;
+  if not Ativo then
+    Exit;
+  Ativo := False;
+  Ativo := True;
 end;
 
 procedure TBalanca.SetPreco(const Value: Currency);
@@ -266,14 +278,13 @@ end;
 procedure TBalanca.SolicitaPeso;
 begin
   RequerAtivo;
-  FWrapper.SetPreco(0.0);
+  FWrapper.SetPreco(0.00);
 end;
 
 { TBalancaWrapper }
 
 function TBalancaWrapper.AguardaEvento: TPesoEvento;
 begin
-  EnterCriticalSection(cs);
   case FPesoLib_aguardaEvento(FInstancia) of
     0: Result := peCancelado;
     1: Result := peConectado;
@@ -281,20 +292,22 @@ begin
   else
     Result := pePesoRecebido;
   end;
-  LeaveCriticalSection(cs);
 end;
 
 procedure TBalancaWrapper.Cancela;
 begin
+  if FCancelado then
+    Exit;
+  FCancelado := True;
   FPesoLib_cancela(FInstancia);
 end;
 
 constructor TBalancaWrapper.Create(const Biblioteca, Configuracao: string);
 begin
+  FCancelado := True;
   FModulo := LoadLibrary(PChar(Biblioteca));
   if FModulo = 0 then
     raise Exception.CreateFmt('Não foi possível carregar a biblioteca %s', [Biblioteca]);
-  InitializeCriticalSection(cs);
   FPesoLib_cria := TPesoLib_criaFunc(GetProcAddress(FModulo, 'PesoLib_cria'));
   FPesoLib_isConectado := TPesoLib_isConectadoFunc(GetProcAddress(FModulo, 'PesoLib_isConectado'));
   FPesoLib_setConfiguracao := TPesoLib_setConfiguracaoFunc(GetProcAddress(FModulo, 'PesoLib_setConfiguracao'));
@@ -309,19 +322,21 @@ begin
   FPesoLib_libera := TPesoLib_liberaFunc(GetProcAddress(FModulo, 'PesoLib_libera'));
   FPesoLib_getVersao := TPesoLib_getVersaoFunc(GetProcAddress(FModulo, 'PesoLib_getVersao'));
   FInstancia := FPesoLib_cria(PAnsiChar(AnsiString(Configuracao)));
+  FCancelado := False;
   FMarcas := TStringList.Create;
   FMarcas.Text := string(FPesoLib_getMarcas(FInstancia));
+  FWaitEvent := TEvent.Create(nil, False, True, '');
+  FThreadEvento := TThreadEvento.Create(Self);
 end;
 
 destructor TBalancaWrapper.Destroy;
 begin
   Cancela;
-  EnterCriticalSection(cs);
+  FWaitEvent.WaitFor(INFINITE);
   FPesoLib_libera(FInstancia);
-  LeaveCriticalSection(cs);
-  FreeLibrary(FModulo);
+  FWaitEvent.Free;
   FMarcas.Free;
-  DeleteCriticalSection(cs);
+  FreeLibrary(FModulo);
   inherited;
 end;
 
@@ -365,30 +380,56 @@ begin
   FPesoLib_solicitaPeso(FInstancia, Preco);
 end;
 
+procedure TBalancaWrapper.Start;
+begin
+  FThreadEvento.Start;
+end;
+
+procedure TBalancaWrapper.DoConectado;
+begin
+  if Assigned(FOnConectado) then
+    FOnConectado(Self);
+end;
+
+procedure TBalancaWrapper.DoDesconectado;
+begin
+  if Assigned(FOnDesconectado) then
+    FOnDesconectado(Self);
+end;
+
+procedure TBalancaWrapper.DoPesoRecebido;
+begin
+  if Assigned(FOnPesoRecebido) then
+    FOnPesoRecebido(Self, FPeso);
+end;
+
 { TThreadEvento }
 
-constructor TThreadEvento.Create(Balanca: TBalanca);
+constructor TThreadEvento.Create(Wrapper: TBalancaWrapper);
 begin
   inherited Create(True);
   FreeOnTerminate := True;
-  FBalanca := Balanca;
+  FWrapper := Wrapper;
 end;
 
 procedure TThreadEvento.Execute;
 var
   Evento: TPesoEvento;
 begin
-  repeat
-    Evento := FBalanca.FWrapper.AguardaEvento;
+  FWrapper.FWaitEvent.ResetEvent;
+  while not FWrapper.FCancelado do
+  begin
+    Evento := FWrapper.AguardaEvento;
     case Evento of
       peCancelado: ;
-      peConectado: Synchronize(FBalanca.DoConectado);
-      peDesconectado: Synchronize(FBalanca.DoDesconectado);
+      peConectado: Synchronize(FWrapper.DoConectado);
+      peDesconectado: Synchronize(FWrapper.DoDesconectado);
     else
-      FBalanca.FPeso := FBalanca.FWrapper.UltimoPeso;
-      Synchronize(FBalanca.DoPesoRecebido);
+      FWrapper.FPeso := FWrapper.UltimoPeso;
+      Synchronize(FWrapper.DoPesoRecebido);
     end;
-  until FBalanca.FCancelado or (Evento = peCancelado);
+  end;
+  FWrapper.FWaitEvent.SetEvent;
 end;
 
 end.

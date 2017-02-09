@@ -1,3 +1,8 @@
+2.1.0.0
+Corrigido crash quando encerra a biblioteca
+Criado menu de operações de teste, tecla '
+Alterado wrapper Delphi para manipular eventos da balança
+
 2.0.0.0
 Melhorado identificação de dispositivo, adicionado protocolo Urano Pop
 Adicionado driver de balança Elgin

@@ -6,7 +6,7 @@
 typedef PesoLib * (LIBCALL * PesoLib_criaFunc)(const char*);
 typedef void (LIBCALL * PesoLib_liberaFunc)(PesoLib*);
 
-#ifdef __MINGW64__
+#ifdef _WIN64
 #define DLL_FILE "../bin/x64/PesoLib.dll"
 #else
 #define DLL_FILE "../bin/x86/PesoLib.dll"

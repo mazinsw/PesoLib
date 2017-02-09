@@ -52,3 +52,5 @@ __history
 *.o
 *.identcache
 *.stat
+*.layout
+*.stat

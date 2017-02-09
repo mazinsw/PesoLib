@@ -1,5 +1,5 @@
 @echo OFF 
-SET version="2.0.0.0"
+SET version="2.1.0.0"
 SET filename="%~d0%~p0bin\releases\pesolib-%version%.zip"
 del %filename%
 

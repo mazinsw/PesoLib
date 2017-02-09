@@ -1,6 +1,6 @@
 1 VERSIONINFO
-    FILEVERSION 2, 0, 0, 0
-    PRODUCTVERSION 2, 0, 0, 0
+    FILEVERSION 2, 1, 0, 0
+    PRODUCTVERSION 2, 1, 0, 0
     FILEOS 0x4L
     FILETYPE 0x1L
 BEGIN
@@ -10,12 +10,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "MZSW"
             VALUE "FileDescription", "Biblioteca para obtenção de peso de item de balanças"
-            VALUE "FileVersion", "2.0.0.0"
+            VALUE "FileVersion", "2.1.0.0"
             VALUE "InternalName", "PesoLib.exe"
             VALUE "LegalCopyright", ""
             VALUE "OriginalFilename", "PesoLib.exe"
             VALUE "ProductName", "PesoLib"
-            VALUE "ProductVersion", "2.0.0.0"
+            VALUE "ProductVersion", "2.1.0.0"
         END
     END
     BLOCK "VarFileInfo"
