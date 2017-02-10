@@ -61,7 +61,10 @@ var
   str: string;
 begin
   // converte de grama para Kilo
-  str := FormatFloat('0.000', Gramas / 1000) + ' Kg';
+  if Gramas >= 1000 then
+    str := FormatFloat('0.000', Gramas / 1000) + ' kg'
+  else
+    str := IntToStr(Gramas) + ' g';
   LabelPeso.Caption := str;
   ListBox1.AddItem('Peso recebido ' + str, nil);
   // calcula o total

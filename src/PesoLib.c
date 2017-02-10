@@ -60,12 +60,16 @@ static void _PesoLib_disconnect(PesoLib * lib)
 	printf("Disconnecting device\n");
 #endif
 	lib->abandoned = 1;
+	Mutex_lock(lib->writeMutex);
 	if(lib->comm != NULL)
 		CommPort_cancel(lib->comm);
+	Mutex_unlock(lib->writeMutex);
 	Thread_join(lib->thReceive);
+	Mutex_lock(lib->writeMutex);
 	if(lib->comm != NULL)
 		CommPort_free(lib->comm);
 	lib->comm = NULL;
+	Mutex_unlock(lib->writeMutex);
 	lib->abandoned = 0;
 	lib->connected = 0;
 #ifdef DEBUGLIB
@@ -299,20 +303,50 @@ static void _PesoLib_connectFunc(void* data)
 #endif
 		return;
 	}
+	i = 0;
 	count = 0;
-	need = CommPort_enum(NULL, 0);
-	if(lib->port[0] != 0)
-		len = strlen(lib->port) + 1;
-	else
-		len = 0;
-	ports = (char*)malloc(need + len + 1);
-	if(len > 0)
+	need = 4096;
+	do
 	{
-		memcpy(ports, lib->port, len);
-		ports[len] = 0;
-		count++;
-	}
-	count += CommPort_enum(ports + len, need);
+		if(lib->port[0] != 0)
+			len = strlen(lib->port) + 1;
+		else
+			len = 0;
+		ports = (char*)malloc(need + len + 1);
+		if(len > 0)
+		{
+			memcpy(ports, lib->port, len);
+			ports[len] = 0;
+			count++;
+		}
+		int port_count = CommPort_enum(ports + len, need);
+		if(port_count == 0)
+		{
+#ifdef DEBUGLIB
+	printf("Error on enum ports\n");
+#endif
+			break;
+		}
+		if(port_count < 0)
+		{
+			if(i > 1)
+			{
+#ifdef DEBUGLIB
+		printf("Error trying to enum ports again, stoped!\n");
+#endif
+				break;
+			}
+#ifdef DEBUGLIB
+	printf("Enum ports, need more %d byte of memory\n", -port_count);
+#endif
+			need = -port_count;
+			i++;
+			free(ports);
+			continue;	
+		}
+		count += port_count;
+		break;
+	} while(1);
 #ifdef DEBUGLIB
 	printf("Searching port... %d found\n", count);
 #endif
@@ -598,7 +632,7 @@ LIBEXPORT int LIBCALL PesoLib_aguardaEvento(PesoLib * lib)
 	events[1] = lib->evConnect;
 	events[2] = lib->evReceive;
 	Event* object = Event_waitMultiple(events, 3);
-	if(object == lib->evCancel)
+	if(object == events[0])
 	{
 #ifdef DEBUGLIB
 		printf("Event cancelled triggered\n");
@@ -631,7 +665,7 @@ LIBEXPORT int LIBCALL PesoLib_recebePeso(PesoLib * lib, int* gramas)
 	
 	events[0] = lib->evCancel;
 	events[1] = lib->evReceive;
-	if(Event_waitMultiple(events, 2) != lib->evReceive)
+	if(Event_waitMultiple(events, 2) != events[1])
 		return 0;
 	*gramas = lib->weight;
 	return 1;

@@ -66,10 +66,56 @@ static int _Elgin_execute_normal(const unsigned char* buffer, int size,
 	return 9;
 }
 
+// PESO/PREÇO/TOTAL1 (FILIZOLA CS E PLURIS)
+static int _Elgin_execute_avancado(const unsigned char* buffer, int size,
+	int * weight, int * stable)
+{
+	int i;
+	int _peso = 0, mult = 1;
+	
+	if(size < 22 || buffer[0] != 0x02 || buffer[21] != 0x03)
+		return 0;
+	// [STX]IIIIIIIIIIIIIIIIIIII[ETX]
+	// [STX]NNNNNNNNNNNNNNNNNNNN[ETX]
+	// [STX]SSSSSSSSSSSSSSSSSSSS[ETX]
+	if(buffer[1] == 'I' || buffer[1] == 'N' || buffer[1] == 'S')
+	{
+		for(i = 20; i >= 2; i--)
+		{
+			if(buffer[1] != buffer[i])
+				return 0;
+		}
+		*stable = 0;
+		return 22;
+	}
+	// [STX] 00666    000    000[ETX]
+	for(i = 6; i >= 1; i--)
+	{
+		if(i == 4 && buffer[i] == '.')
+			continue;
+		if(i == 1 && buffer[i] == '-')
+		{
+			*stable = 0;
+			return 22;
+		} else if(i == 1)
+			break;
+		if(buffer[i] < '0' || buffer[i] > '9')
+			return 0;
+		_peso += mult * (buffer[i] - '0');
+		mult *= 10;
+	}
+	*weight = _peso;
+	*stable = _peso > 0;
+	return 22;
+}
+
 int Elgin_execute(Device* _dev, const unsigned char* buffer, int size)
 {
 	Elgin* dev = (Elgin*)_dev->data;
-	return _Elgin_execute_normal(buffer, size, &dev->weight, &dev->stable);
+	int r = _Elgin_execute_normal(buffer, size, &dev->weight, &dev->stable);
+	if(r != 0)
+		return r;
+	return _Elgin_execute_avancado(buffer, size, &dev->weight, &dev->stable);
 }
 
 int Elgin_isStable(Device * _dev)
@@ -87,7 +133,7 @@ int Elgin_getWeight(Device * _dev)
 void Elgin_getResponseRange(Device * _dev, int * min, int * max)
 {
 	*min = 8;
-	*max = 9;
+	*max = 22;
 }
 
 const char* Elgin_getName(Device * _dev)

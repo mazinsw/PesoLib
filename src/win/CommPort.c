@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#define BUFFER_LEN 4096
+
 struct CommPort
 {
 	HANDLE hFile;
@@ -139,27 +141,33 @@ int CommPort_enum(char * buffer, int size)
 	BYTE * PortsPtr;
 	PPORT_INFO_1 InfoPtr;
 	char * TempStr, * ptr, *search;
-	Success = EnumPorts(NULL, 1, NULL, 0, &BytesNeeded, &Returned);
-	if(Success || GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+	
+	PortsPtr = (BYTE*)malloc(5);
+	Success = EnumPorts(NULL, 1, PortsPtr, 5, &BytesNeeded, &Returned);
+	if(!Success && GetLastError() == ERROR_INSUFFICIENT_BUFFER)
 	{
 #ifdef DEBUGLIB
-		printf("Failed to calculate buffer for enum ports\n");
+		printf("Allocating %li byte\n", BytesNeeded);
 #endif
-		return 0;
-	}	
-	PortsPtr = (BYTE*)malloc(BytesNeeded);
-	Success = EnumPorts(NULL, 1, PortsPtr, BytesNeeded, &BytesNeeded, &Returned);
+		free(PortsPtr);
+		PortsPtr = (BYTE*)malloc(BytesNeeded);
+		Success = EnumPorts(NULL, 1, PortsPtr, BytesNeeded, &BytesNeeded, &Returned);
+	}
 	if(!Success)
 	{
 #ifdef DEBUGLIB
 		printf("Failed to enum ports\n");
 #endif
+		free(PortsPtr);
 		return 0;
 	}
-	if(buffer == NULL || size < (int)(BytesNeeded + Returned + 1))
+	if(size < (int)(BytesNeeded + Returned + 1))
 	{
+#ifdef DEBUGLIB
+		printf("Insufficient buffer, need %li byte\n", BytesNeeded + Returned + 1);
+#endif
 		free(PortsPtr);
-		return (BytesNeeded + Returned + 1) - size;
+		return -(BytesNeeded + Returned + 1);
 	}
 	ptr = buffer;
 	ptr[0] = 0;

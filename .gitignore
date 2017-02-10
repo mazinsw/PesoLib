@@ -54,3 +54,4 @@ __history
 *.stat
 *.layout
 *.stat
+*.sublime-workspace

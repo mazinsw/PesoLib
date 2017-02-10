@@ -4,6 +4,5 @@
 		<Folder Name=".." Expanded="Yes"/>
 		<Folder Name="..\include" Expanded="Yes"/>
 		<Folder Name="..\src" Expanded="Yes"/>
-		<Folder Name="..\src\win" Expanded="Yes"/>
 	</Folders>
 </Layout>

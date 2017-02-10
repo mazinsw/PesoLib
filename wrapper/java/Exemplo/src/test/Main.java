@@ -95,7 +95,10 @@ public class Main extends JDialog implements BalancaListener, WindowListener {
 
 	@Override
 	public void onPesoRecebido(Object arg0, int gramas) {
-		String str = String.format("%.3f", gramas / 1000.0) + " Kg";
+		String str = String.format("%.3f", gramas / 1000.0) + " kg";
+		if(gramas < 1000) {
+			str = String.format("%d", gramas) + " g";
+		}
 		lblPeso.setText(str);
 		float total = Float.parseFloat(textField.getText().replace(',', '.'));
 		lblTotal.setText("R$ " + String.format("%.2f", (total * gramas / 1000)));
@@ -142,7 +145,7 @@ public class Main extends JDialog implements BalancaListener, WindowListener {
 		lblStatusLbl.setBounds(41, 114, 86, 38);
 		contentPanel.add(lblStatusLbl);
 		
-		lblPeso = new JLabel("0 Kg");
+		lblPeso = new JLabel("0 kg");
 		lblPeso.setForeground(new Color(255, 127, 80));
 		lblPeso.setFont(new Font("Microsoft Sans Serif", Font.PLAIN, 25));
 		lblPeso.setBounds(118, 34, 148, 38);

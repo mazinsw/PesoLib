@@ -32,9 +32,9 @@ object Form1: TForm1
   object LabelPeso: TLabel
     Left = 112
     Top = 24
-    Width = 49
+    Width = 45
     Height = 29
-    Caption = '0 Kg'
+    Caption = '0 kg'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = 28637
     Font.Height = -24
@@ -146,7 +146,6 @@ object Form1: TForm1
     Text = '3,20'
   end
   object Balanca1: TBalanca
-    Ativo = False
     NomeDriver = 'PesoLib.dll'
     OnConectado = Balanca1Conectado
     OnDesconectado = Balanca1Desconectado
