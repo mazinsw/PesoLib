@@ -2,6 +2,8 @@ unit Balanca;
 
 interface
 
+{$INCLUDE jedi.inc}
+
 uses
   Windows, SysUtils, Classes, SyncObjs;
 
@@ -133,7 +135,7 @@ procedure Register;
 implementation
 
 uses
-  Dialogs, AnsiStrings;
+  Dialogs{$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}, AnsiStrings{$ENDIF};
 
 procedure Register;
 begin
@@ -338,7 +340,8 @@ end;
 
 function TBalancaWrapper.GetConfiguracao: string;
 begin
-  Result := string(AnsiStrings.StrPas(FPesoLib_getConfiguracao(FInstancia)));
+  Result := string({$IFDEF DEPRECATED_SYSUTILS_ANSISTRINGS}AnsiStrings.{$ENDIF}
+    StrPas(FPesoLib_getConfiguracao(FInstancia)));
 end;
 
 procedure TBalancaWrapper.GetModelos(const Marca: string; Lista: TStrings);
@@ -373,7 +376,11 @@ end;
 
 procedure TBalancaWrapper.Start;
 begin
-  FThreadEvento.Start;
+{$IFDEF DELPHI2010_UP}
+    FThreadEvento.Start;
+{$ELSE}
+    FThreadEvento.Resume;
+{$ENDIF}
 end;
 
 procedure TBalancaWrapper.DoConectado;

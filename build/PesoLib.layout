@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<Layout>
-	<Folders>
-		<Folder Name=".." Expanded="Yes"/>
-		<Folder Name="..\include" Expanded="Yes"/>
-		<Folder Name="..\src" Expanded="Yes"/>
-	</Folders>
-</Layout>

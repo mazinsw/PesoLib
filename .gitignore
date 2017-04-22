@@ -55,3 +55,5 @@ __history
 *.layout
 *.stat
 *.sublime-workspace
+build/PesoLib.layout
+*.stat
