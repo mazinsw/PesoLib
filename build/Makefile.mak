@@ -19,20 +19,20 @@ OBJS   = ../src/PesoLib.o \
          ../src/util/StringBuilder.o \
          ../src/java/br_com_mzsw_PesoLibWrapper.o
 
-LIBS   = -lwinspool -m32
-CFLAGS = -I..\include -I..\src\system -I..\src\comm -I..\src\device -I..\src\driver -I..\src\util -I..\src\java\jni -I..\src\java\jni\win32 -DLIB_STATIC -m32 -fno-diagnostics-show-option
+LIBS   = -lwinspool -m64
+CFLAGS = -I..\include -I..\src\system -I..\src\comm -I..\src\device -I..\src\driver -I..\src\util -I..\src\java\jni -I..\src\java\jni\win32 -DLIB_STATIC -m64 -fno-diagnostics-show-option
 
 .PHONY: all
 
-all: ../lib/x86/libPesoLib.a
+all: ../lib/x64/libPesoLib.a
 
 clean:
-	$(RM) $(OBJS) ../lib/x86/libPesoLib.a
+	$(RM) $(OBJS) ../lib/x64/libPesoLib.a
 
 clear:
 	$(RM) $(OBJS)
 
-../lib/x86/libPesoLib.a: $(OBJS)
+../lib/x64/libPesoLib.a: $(OBJS)
 	$(AR) rc $@ $(OBJS)
 	$(RANLIB) $@
 

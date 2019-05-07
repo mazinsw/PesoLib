@@ -299,7 +299,7 @@ static void _PesoLib_connectFunc(void* data)
 	if(lib->canceled || lib->abandoned) 
 	{
 #ifdef DEBUGLIB
-	printf("Connection aborted\n");
+        printf("Connection aborted\n");
 #endif
 		return;
 	}
@@ -323,7 +323,7 @@ static void _PesoLib_connectFunc(void* data)
 		if(port_count == 0)
 		{
 #ifdef DEBUGLIB
-	printf("Error on enum ports\n");
+            printf("Error on enum ports\n");
 #endif
 			break;
 		}
@@ -332,12 +332,12 @@ static void _PesoLib_connectFunc(void* data)
 			if(i > 1)
 			{
 #ifdef DEBUGLIB
-		printf("Error trying to enum ports again, stoped!\n");
+                printf("Error trying to enum ports again, stoped!\n");
 #endif
 				break;
 			}
 #ifdef DEBUGLIB
-	printf("Enum ports, need more %d byte of memory\n", -port_count);
+            printf("Enum ports, need more %d byte of memory\n", -port_count);
 #endif
 			need = -port_count;
 			i++;

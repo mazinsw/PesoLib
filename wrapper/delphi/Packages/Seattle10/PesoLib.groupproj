@@ -1,0 +1,36 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{38727F08-9016-47C7-8BDB-9F47A6E4BBAE}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="PesoLib230.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="PesoLib230">
+        <MSBuild Projects="PesoLib230.dproj"/>
+    </Target>
+    <Target Name="PesoLib230:Clean">
+        <MSBuild Projects="PesoLib230.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="PesoLib230:Make">
+        <MSBuild Projects="PesoLib230.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="PesoLib230"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="PesoLib230:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="PesoLib230:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

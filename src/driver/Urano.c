@@ -19,15 +19,54 @@ int Urano_init(Device* _dev)
 	dev->stable = 0;
 	dev->weight = 0;
 	strcpy(dev->buffer, "Urano");
-	strcpy(dev->models, "UDC30000/5"); // TODO: add models
+	strcpy(dev->models, "UDC30000/5\nUDC-CO 30/2E"); // TODO: add models
 	return 1;
+}
+
+static int _Urano_execute_urano_12(const unsigned char* buffer, int size,
+						  int * peso, int * stable)
+{
+	// Urano13: ?
+	// Urano12 : [ESC]T1[ESC]A13[ESC]N0[ESC]S2[ESC]D4[ESC]Q193[ESC]B * PESO:    135 g[ESC]E[ESC]P01
+	if(size < 46 || buffer[0] != 0x1B || buffer[1] != 'T' || buffer[2] != '1' || 
+			buffer[42] != 0x1B || buffer[43] != 'P' || buffer[44] != '0' || buffer[45] != '1')
+		return 0;
+	if(buffer[24] != '*')
+	{
+		*stable = 0;
+		return 46;
+	}
+	int i, _peso = 0, mult = 1;
+	unsigned char bff[6];
+	char kilo = buffer[38] == 'k';
+	memcpy(bff, buffer + 32, 6);
+	for(i = 5; i >= 0; i--)
+	{
+		if(bff[i] == ',')
+		{
+			if(kilo)
+				_peso *= pow(10, 3 - (5 - i));
+			else
+			{
+				_peso = 0;
+				mult = 1;
+			}
+			continue;
+		} else if(bff[i] == ' ')
+			continue;
+		if(bff[i] < '0' || bff[i] > '9')
+			return 0;
+		_peso += mult * (bff[i] - '0');
+		mult *= 10;
+	}
+	*peso = _peso;
+	*stable = _peso > 0;
+	return 46;
 }
 
 static int _Urano_execute_urano_c(const unsigned char* buffer, int size,
 						  int * peso, int * stable)
 {
-	// Urano12: ?
-	// Urano13: ?
 	// UranoC : [ESC]T2[ESC]A13[ESC]N0[ESC]S2[ESC]D4[ESC]Q193[ESC]B * PESO(L):    135 g      TARA:      0 g[ESC]E[ESC]P01
 	if(size < 69 || buffer[0] != 0x1B || buffer[1] != 'T' || buffer[2] != '2' || 
 			buffer[65] != 0x1B || buffer[66] != 'P' || buffer[67] != '0' || buffer[68] != '1')
@@ -96,6 +135,9 @@ int Urano_execute(Device* _dev, const unsigned char* buffer, int size)
 	int r = _Urano_execute_urano_c(buffer, size, &dev->weight, &dev->stable);
 	if(r != 0)
 		return r;
+    r = _Urano_execute_urano_12(buffer, size, &dev->weight, &dev->stable);
+	if(r != 0)
+		return r;
 	return _Urano_execute_urano_pop(buffer, size, &dev->weight, &dev->stable);
 }
 
@@ -113,7 +155,7 @@ int Urano_getWeight(Device * _dev)
 
 void Urano_getResponseRange(Device * _dev, int * min, int * max)
 {
-	*min = 56;
+	*min = 46;
 	*max = 69;
 }
 
