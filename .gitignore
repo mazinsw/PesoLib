@@ -57,3 +57,4 @@ __history
 *.sublime-workspace
 build/PesoLib.layout
 *.stat
+*.res

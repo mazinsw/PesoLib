@@ -1,0 +1,10 @@
+{
+    "files.autoGuessEncoding": true,
+    "[c]": {
+        "files.encoding": "windows1252"
+    },
+    "files.associations": {
+        "deviceprivate.h": "c",
+        "device.h": "c"
+    }
+}

@@ -72,7 +72,7 @@ static int _Elgin_execute_avancado(const unsigned char* buffer, int size,
 {
 	int i;
 	int _peso = 0, mult = 1;
-	
+
 	if(size < 22 || buffer[0] != 0x02 || buffer[21] != 0x03)
 		return 0;
 	// [STX]IIIIIIIIIIIIIIIIIIII[ETX]
@@ -91,14 +91,13 @@ static int _Elgin_execute_avancado(const unsigned char* buffer, int size,
 	// [STX] 00666    000    000[ETX]
 	for(i = 6; i >= 1; i--)
 	{
-		if(i == 4 && buffer[i] == '.')
+		if(buffer[i] == ' ')
 			continue;
 		if(i == 1 && buffer[i] == '-')
 		{
 			*stable = 0;
 			return 22;
-		} else if(i == 1)
-			break;
+		}
 		if(buffer[i] < '0' || buffer[i] > '9')
 			return 0;
 		_peso += mult * (buffer[i] - '0');
