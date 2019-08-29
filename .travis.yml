@@ -1,0 +1,25 @@
+language: node_js
+services:
+  - docker
+before_install:
+  - docker pull mazinsw/mingw-w64:4.0.4
+script:
+  - docker run -ti -v `pwd`:/mnt mazinsw/mingw-w64:4.0.4 /bin/sh -c '
+      cd /mnt &&
+      make clean shared64 &&
+      make clean shared32 &&
+      make clean static64 &&
+      make clean static32'
+
+deploy:
+  provider: releases
+  api_key:
+    secure: np2ozI0W3NUBhwyfFfEMoT+s6ZTFTGsE8oB4a1x/TwVvTHioAUPFv8DwEDlBiSBaDpY00aug+/Mc3cZaxnU2WyK7aTgv+bWpD+tamFLnXzNUfS5riLboRZkArKVC2NPm1fn8hMRMFSooli853wrzu7jaPtnTB8eCQJ6Kj92PYK0mFbzG1YnoMdnlFsnUt5SusLocOfCUBYEtmxMh5f0xfJAvMIQUGWItzUHiIqy9aX/XwguGopeI77TSBYvPKraauzHqkdhb9Hr5RGTwVIlHImLNhZELvAOpQitQ/5sle6u1FdwmnFCTtd8AWy0Y+LL2RhSjgIUBOvyo13zfs3PIeG7ivqToPg/trqPKRy/4B0ngd+jQ+wW41U9eIZ2fNKXHF9p7zRvMtd3wfhFSr9S8xl6vhwYrevI6bbICDHEWV6kRX+FCdk1HJbzhQmuCxgiG6gqV5b3dxygcIlf0opqHhj76xZtSErpL402fhLk+9br9bqe01Tz7nIPmtata60b2gtPHmQT+fbTHN/rPzJ5JPrn4rB6iSf50Ms1UM9jGGTU3JEaSt8jEcroSxXd493FVpdPq0w4Mtpd6CttgFAHe3Vvc2Krqtp1ENhe1ovxsXmi0/TU2JRr5235/grA7sFP7Hngcrhw3LsMrAQZ2be7+lLlcX1/5Vk/JDctf6UKlKX0=
+  file:
+    - build/x64/PesoLib.dll
+    - build/x86/PesoLib.dll
+    - build/x64/PesoLib.exe
+    - build/x86/PesoLib.exe
+  on:
+    tags: true
+    repo: mazinsw/PesoLib
