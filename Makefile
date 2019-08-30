@@ -57,10 +57,12 @@ purge: clean
 
 build/x64/PesoLib.dll: dll64 $(OBJS)
 	mkdir -p $(dir $@)
+	mkdir -p lib/x64
 	$(CC) -Wall -s -O2 -o $@ $(OBJS) $(LIBS)
 
 build/x86/PesoLib.dll: dll32 $(OBJS)
 	mkdir -p $(dir $@)
+	mkdir -p lib/x86
 	$(CC) -Wall -s -O2 -o $@ $(OBJS) $(LIBS)
 
 build/x64/PesoLib.exe: exe64 $(OBJS)

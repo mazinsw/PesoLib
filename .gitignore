@@ -58,3 +58,5 @@ __history
 build/PesoLib.layout
 *.stat
 *.res
+lib/
+build/
