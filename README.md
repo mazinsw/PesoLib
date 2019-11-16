@@ -1,28 +1,44 @@
-Biblioteca para obtenÁ„o de peso de itens sobre balanÁas
-========================================================
+[![GitHub tag](https://img.shields.io/github/release/mazinsw/PesoLib.svg)](https://github.com/mazinsw/PesoLib/releases)
 
-PesoLib È uma biblioteca capaz de detectar e conectar-se
-‡ uma balanÁa plugada no computador, os pesos podem ser recebidos
-sem a necessidade de solicitaÁ„o, ou seja quando um item for colocado sobre
-a balanÁa a biblioteca enviar· o peso automaticamente para sua aplicaÁ„o.
+Biblioteca para obten√ß√£o de peso sobre balan√ßas
+=
 
-com ela È possÌvel tambÈm informar o preÁo do item, e mostrar o total no visor da
-balanÁa(apenas para balanÁas que o suportam).
+PesoLib √© uma biblioteca capaz de detectar e conectar-se
+√† uma balan√ßa plugada no computador, os pesos podem ser recebidos
+sem a necessidade de solicita√ß√£o, ou seja quando um item for colocado sobre
+a balan√ßa a biblioteca enviar√° o peso automaticamente para sua aplica√ß√£o.
+
+com ela √© poss√≠vel tamb√©m informar o pre√ßo do item, e mostrar o total no visor da
+balan√ßa(apenas para balan√ßas que o suportam).
 
 possui exemplos nas linguagens Java, Delphi e C, para 32 e 64 bit
 e encontram-se na pasta "wrapper"
 
-Atualmente suporta v·rios modelos das marcas Toledo, Filizola, Magna, Urano, Elgin e Alfa
+Atualmente suporta v√°rios modelos das marcas Toledo, Filizola, Magna, Urano, Elgin e Alfa
 
-Algumas balanÁas precisam que suas configuraÁıes sejam alteradas para o envio automatico do peso
-verifique o manual e faÁa o teste!
-Se mesmo assim vocÍ n„o conseguiu conectar ‡ sua balanÁa
-envie um email para desenvolvimento@mzsw.com.br 
-com o tÌtulo: Biblioteca para balanÁas
-informando a marca, modelo da balanÁa e a conex„o usada(Serial, Paralela ou USB)
+Algumas balan√ßas precisam que suas configura√ß√µes sejam alteradas para o envio automatico do peso
+verifique o manual e fa√ßa o teste!
+Se mesmo assim voc√™ n√£o conseguiu conectar √† sua balan√ßa
+envie um email para desenvolvimento@grandchef.com.br 
+com o t√≠tulo: Biblioteca para balan√ßas
+informando a marca, modelo da balan√ßa e a conex√£o usada(Serial, Paralela ou USB)
 
-sugestıes e agradecimentos s„o sempre bem vindos,
-ent„o n„o deixe de enviar um "Valeu!" para desenvolvimento@mzsw.com.br
+sugest√µes e agradecimentos s√£o sempre bem vindos,
+ent√£o n√£o deixe de enviar um "Valeu!" para desenvolvimento@grandchef.com.br
+
+### Compilando
+
+Para compilar e criar as dll e execut√°veis, voc√™ precisar√° do docker instalado em sua m√°quina
+
+- Windows
+  ```cmd
+  docker run -ti -v %cd%:/mnt mazinsw/mingw-w64:4.0.4 /bin/sh -c "cd /mnt && make clean shared64 && make clean shared32 && make clean static64 && make clean static32"
+  ```
+
+- Linux
+  ```cmd
+  docker run -ti -v `pwd`:/mnt -u `id -u $USER`:`id -g $USER` mazinsw/mingw-w64:4.0.4 /bin/sh -c 'cd /mnt && make clean shared64 && make clean && make static64 && make clean static32'
+  ```
 
 ![Alt text](/res/img/teste.png?raw=true "Programa de teste")
 

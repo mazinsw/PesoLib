@@ -140,8 +140,7 @@ static int _PesoLib_dataReceived(PesoLib * lib, const unsigned char * buffer,
 #ifdef DEBUGLIB
 		printf("Checking stable %s = %d\n", Device_getName(dev), Device_isStable(dev));
 #endif
-		if(!Device_isStable(dev))
-			break;
+		lib->stable = Device_isStable(dev);
 		lib->weight = Device_getWeight(dev);
 		Event_post(lib->evReceive);
 		break;
@@ -649,9 +648,9 @@ LIBEXPORT int LIBCALL PesoLib_aguardaEvento(PesoLib * lib)
 		return Evento_Desconectado;
 	}
 #ifdef DEBUGLIB
-		printf("Event weight received\n");
+		printf(lib->stable ? "Event weight received\n" : "Unstable weight\n");
 #endif
-	return Evento_PesoRecebido;
+	return lib->stable ? Evento_PesoRecebido : Evento_PesoInstavel;
 }
 
 LIBEXPORT int LIBCALL PesoLib_getUltimoPeso(PesoLib * lib)

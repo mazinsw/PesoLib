@@ -11,7 +11,13 @@ const
   pesolib = 'PesoLib.dll';
 
 type
-  TPesoEvento = (peCancelado, peConectado, peDesconectado, pePesoRecebido);
+  TPesoEvento = (
+    peCancelado,
+    peConectado,
+    peDesconectado,
+    pePesoRecebido,
+    pePesoInstavel
+  );
   TPesoRecebidoEvent = procedure(Sender: TObject; Gramas: Integer) of object;
   TPesoLib = Pointer;
   TPesoLib_criaFunc = function(const configuracao: PAnsiChar): TPesoLib; stdcall;
@@ -38,6 +44,7 @@ type
     FOnPesoRecebido: TPesoRecebidoEvent;
     FOnConectado: TNotifyEvent;
     FOnDesconectado: TNotifyEvent;
+    FOnPesoInstavel: TNotifyEvent;
     FPesoLib_cria: TPesoLib_criaFunc;
     FPesoLib_isConectado: TPesoLib_isConectadoFunc;
     FPesoLib_setConfiguracao: TPesoLib_setConfiguracaoFunc;
@@ -54,6 +61,7 @@ type
     procedure DoPesoRecebido;
     procedure DoConectado;
     procedure DoDesconectado;
+    procedure DoPesoInstavel;
     function GetConectado: Boolean;
     function GetConfiguracao: string; 
     function GetVersao: string;
@@ -75,6 +83,7 @@ type
     property OnConectado: TNotifyEvent read FOnConectado write FOnConectado;
     property OnDesconectado: TNotifyEvent read FOnDesconectado write FOnDesconectado;
     property OnPesoRecebido: TPesoRecebidoEvent read FOnPesoRecebido write FOnPesoRecebido;
+    property OnPesoInstavel: TNotifyEvent read FOnPesoInstavel write FOnPesoInstavel;
   end;
 
   TBalanca = class(TComponent)
@@ -89,6 +98,8 @@ type
     FOnConectado: TNotifyEvent;
     FOnDesconectado: TNotifyEvent;
     FNomeDriver: string;
+    FInstavel: Boolean;
+    FOnPesoInstavel: TNotifyEvent;
     procedure SetPreco(const Value: Currency);
     procedure RequerAtivo;
     procedure SetAtivo(const Value: Boolean);
@@ -96,6 +107,7 @@ type
     function GetConfiguracao: string;
     procedure SetConfiguracao(const Value: string);
     function GetVersao: string;
+    procedure DoPesoInstavel(Sender: TObject);
   protected
     { Protected declarations }
     procedure DoPesoRecebido(Sender: TObject; Gramas: Integer);
@@ -113,12 +125,14 @@ type
     property Versao: string read GetVersao;
     property Configuracao: string read GetConfiguracao write SetConfiguracao;
   published
+    property Instavel: Boolean read FInstavel;
     property UltimoPeso: Integer read FPeso;
     property Ativo: Boolean read FAtivo write SetAtivo default False;
     property NomeDriver: string read FNomeDriver write SetNomeDriver;
     property OnConectado: TNotifyEvent read FOnConectado write FOnConectado;
     property OnDesconectado: TNotifyEvent read FOnDesconectado write FOnDesconectado;
     property OnPesoRecebido: TPesoRecebidoEvent read FOnPesoRecebido write FOnPesoRecebido;
+    property OnPesoInstavel: TNotifyEvent read FOnPesoInstavel write FOnPesoInstavel;
   end;
 
   TThreadEvento = class(TThread)
@@ -177,8 +191,16 @@ begin
     FOnDesconectado(Self);
 end;
 
+procedure TBalanca.DoPesoInstavel(Sender: TObject);
+begin
+  FInstavel := True;
+  if Assigned(FOnPesoInstavel) then
+    FOnPesoInstavel(Self);
+end;
+
 procedure TBalanca.DoPesoRecebido(Sender: TObject; Gramas: Integer);
 begin
+  FInstavel := False;
   FPeso := Gramas;
   if Assigned(FOnPesoRecebido) then
     FOnPesoRecebido(Self, Gramas);
@@ -233,6 +255,7 @@ begin
     FWrapper.OnConectado := DoConectado;
     FWrapper.OnDesconectado := DoDesconectado;
     FWrapper.OnPesoRecebido := DoPesoRecebido;
+    FWrapper.OnPesoInstavel := DoPesoInstavel;
     FWrapper.Start;
   except
     on E: Exception do
@@ -289,6 +312,7 @@ begin
     0: Result := peCancelado;
     1: Result := peConectado;
     2: Result := peDesconectado;
+    4: Result := pePesoInstavel;
   else
     Result := pePesoRecebido;
   end;
@@ -395,6 +419,12 @@ begin
     FOnDesconectado(Self);
 end;
 
+procedure TBalancaWrapper.DoPesoInstavel;
+begin
+  if Assigned(FOnPesoInstavel) then
+    FOnPesoInstavel(Self);
+end;
+
 procedure TBalancaWrapper.DoPesoRecebido;
 begin
   if Assigned(FOnPesoRecebido) then
@@ -422,6 +452,7 @@ begin
       peCancelado: Break;
       peConectado: Synchronize(FWrapper.DoConectado);
       peDesconectado: Synchronize(FWrapper.DoDesconectado);
+      pePesoInstavel: Synchronize(FWrapper.DoPesoInstavel);
     else
       FWrapper.FPeso := FWrapper.UltimoPeso;
       Synchronize(FWrapper.DoPesoRecebido);

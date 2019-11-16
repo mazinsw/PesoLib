@@ -190,6 +190,10 @@ int main(int argc, char** argv)
 			startTick = GetTickCount();
 			Sleep(5000);
 			continue;
+		case Evento_PesoInstavel:
+			gramas = PesoLib_getUltimoPeso(lib);
+			printf("Peso instavel: %.3f Kg\n", gramas / 1000.0);
+			continue;
 		}
 		gramas = PesoLib_getUltimoPeso(lib);
 		printf("Peso recebido: %.3f Kg\n", gramas / 1000.0);

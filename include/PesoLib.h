@@ -40,7 +40,9 @@ typedef enum PesoLibEvento
 	/** A balança foi desconectada */
 	Evento_Desconectado,
 	/** A balança enviou o peso para o computador */
-	Evento_PesoRecebido
+	Evento_PesoRecebido,
+	/** A balança está com peso instável */
+	Evento_PesoInstavel
 } PesoLibEvento;
 
 typedef struct PesoLib PesoLib;
